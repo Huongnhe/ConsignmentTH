@@ -1,0 +1,44 @@
+import { createContext, useState, useEffect, useContext } from "react";
+import { getUserProducts } from "../api/api"; 
+import { AuthContext } from "./AuthContext"; 
+
+export const ConsignContext = createContext();
+
+export const ConsignProvider = ({ children }) => {
+    const { user } = useContext(AuthContext); 
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (user && user.token) { // Chỉ fetch nếu có user và token
+            fetchUserProducts();
+        }
+    }, [user]);
+
+    const fetchUserProducts = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setError("Người dùng chưa đăng nhập");
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getUserProducts(token);
+            setProducts(data);
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách sản phẩm:", error);
+            setError("Không thể lấy danh sách sản phẩm");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <ConsignContext.Provider value={{ products, loading, error, fetchUserProducts }}>
+            {children}
+        </ConsignContext.Provider>
+    );
+};

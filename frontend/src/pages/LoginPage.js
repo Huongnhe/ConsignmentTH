@@ -13,27 +13,34 @@ const LoginPage = () => {
     e.preventDefault();
 
     if (!email || !password) {
-      setError("Vui lòng nhập email và mật khẩu.");
-      return;
+        setError("Vui lòng nhập email và mật khẩu.");
+        return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Email không hợp lệ.");
-      return;
+        setError("Email không hợp lệ.");
+        return;
     }
 
     try {
-      const data = await loginUser(email, password);
-      console.log("Đăng nhập thành công:", data);
-      localStorage.setItem("token", data.token);
-      setError("");
-
-      navigate("/home");
+        const data = await loginUser(email, password);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user)); 
+        
+        setError("");
+        // Kiểm tra quyền và điều hướng
+        if (data.user.Account && data.user.Account.toLowerCase() === "manager") {
+            alert("Navigating to /admin...");
+            navigate("/admin"); 
+        } else {
+          alert("Navigating to /home...");
+            navigate("/home");
+        }
     } catch (error) {
-      setError("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
+        setError("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
     }
-  };
+};
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">

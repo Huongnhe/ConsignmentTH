@@ -15,9 +15,12 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const res = await fetch("http://localhost:8000/login", {
+            const res = await fetch("http://localhost:8000/auth/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
                 body: JSON.stringify({ email, password })
             });
 
@@ -28,7 +31,9 @@ export const AuthProvider = ({ children }) => {
 
             const data = await res.json();
             localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
             setUser(data.user);
+            
         } catch (error) {
             alert(error.message);
         }
@@ -64,8 +69,11 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");  // Xóa cả user nếu cần
         setUser(null);
+        window.location.href = "/login";
     };
+    
 
     return (
         <AuthContext.Provider value={{ user, message, login, logout, register }}>

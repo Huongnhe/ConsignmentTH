@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const API_URL = "http://localhost:8000/auth"; // URL của backend
-
 export const loginUser = async (email, password) => {
+    
     try {
         const response = await axios.post(`${API_URL}/login`, { email, password });
         console.log("Phản hồi từ API:", response.data); // Kiểm tra phản hồi API
@@ -23,3 +23,17 @@ export const registerUser = async (userData) => {
         throw error;
     }
 };
+
+// Lấy danh sách sản phẩm ký gửi của user
+export const getUserProducts = async (token) => {
+    try {
+        const response = await axios.get(`${API_URL}/user-products`, {
+            headers: { Authorization: `Bearer ${token}` }, // Headers truyền đúng vị trí
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi khi lấy danh sách sản phẩm:", error.response?.data || error.message);
+        throw error;
+    }
+};
+

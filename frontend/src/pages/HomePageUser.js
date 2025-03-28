@@ -1,44 +1,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import Navbar from "./MenuUser.js";
 const HomePage = () => {
   const [showHero, setShowHero] = useState(true);
 
   return (
     <div>
-      {/* Navbar */}
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div className="container">
-          <Link className="navbar-brand" to="/">Ký Gửi Hàng Hiệu</Link>
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav ms-auto">
-              <li className="nav-item">
-                <Link className="nav-link" to="/">Trang Chủ</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/consign">Ký Gửi</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/status">Trạng Thái Đơn</Link>
-              </li>
-              <li className="nav-item">
-                <Link className="nav-link" to="/contact">Liên Hệ</Link>
-              </li>
-              <li className="nav-item">
-                {/* <Link to="/login" id="homeLoginButton" className="btn btn-outline-primary me-2">
-                  Đăng nhập
-                </Link> */}
-                <Link id="homeLoginButton" className="nav-link btn btn-outline-primary me-2" to="/login">Đăng Xuất</Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-
+     <Navbar /> {/* Gọi Navbar ở đây */}
       {/* Hero Section */}
       {showHero && (
         <div
