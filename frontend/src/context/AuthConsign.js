@@ -30,7 +30,9 @@ export const ConsignProvider = ({ children }) => {
             setProducts(data);
         } catch (error) {
             console.error("Lỗi khi lấy danh sách sản phẩm:", error);
+            alert("jhgfdsfg")
             setError("Không thể lấy danh sách sản phẩm");
+            
         } finally {
             setLoading(false);
         }

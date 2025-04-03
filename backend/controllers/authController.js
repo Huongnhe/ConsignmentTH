@@ -2,7 +2,6 @@ const jwt = require("jsonwebtoken");
 const { createUser, getUserByEmail } = require("../models/userModel");
 require("dotenv").config();
 
-// Đăng ký user
 async function register(req, res) {
     console.log("Request received:", req.body);
 
@@ -37,10 +36,8 @@ async function register(req, res) {
     });
 }
 
-// Đăng nhập
 function login(req, res) {
     const { email, password } = req.body;
-    // console.log("Email nhận vào:", email);
     getUserByEmail(email, (err, user) => {
         if (err) {
             console.error("Lỗi getUserByEmail:", err);
@@ -65,7 +62,11 @@ function login(req, res) {
         console.log("SECRET_KEY:", process.env["SECRET_KEY"]);
         console.log("Full headers:", req.headers);
         console.log("Raw Authorization header:", req.headers["authorization"]);
-        
+
+        console.log("SECRET_KEY tại loginoooooooo:", process.env.SECRET_KEY);
+        console.log("SECRET_KEY tại authMiddleware:", process.env.SECRET_KEY);
+
+
         console.log("Đăng nhập thành công!");
         return res.json({ message: "Đăng nhập thành công!", token, user });
         // return res.json({ token, user });

@@ -1,4 +1,7 @@
 const jwt = require("jsonwebtoken");
+const express = require("express");
+const app = express();
+const cors = require("cors");
 
 require("dotenv").config();
 app.use(cors({
@@ -21,11 +24,35 @@ const verifyToken = (req, res, next) => {
         console.log("SECRET_KEY:", process.env["SECRET_KEY"]);
         console.log("Token nhận được từ request:", req.header("Authorization"));
         req.user = decoded;
-        
+
         next();
     } catch (error) {
         res.status(401).json({ error: "Token không hợp lệ" });
     }
 };
 
-module.exports = verifyToken;
+
+
+const authenticateUser = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Không có token xác thực" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+        const decoded = jwt.verify(token, "SECRET_KEY"); // Thay SECRET_KEY bằng key của bạn
+        req.user = decoded; // Lưu thông tin user vào req
+        next();
+
+    } catch (error) {
+        return res.status(403).json({ error: "Token không hợp lệ" });
+    }
+
+
+};
+
+
+module.exports = verifyToken, authenticateUser;
