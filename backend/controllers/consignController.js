@@ -9,8 +9,9 @@ const fetchUserProducts = (req, res) => {
     }
     getUserProducts(userId, (err, products) => {
         if (err) {
-            return res.status(500).json({ error: "Lỗi server khi lấy sản phẩm" });
+            return res.status(500)./*  */json({ error: "Lỗi server khi lấy sản phẩm" });
         }
+        console.log("Dữ liệu sản phẩm lấy từ DB:", products);
         res.json(products);
     });
 };

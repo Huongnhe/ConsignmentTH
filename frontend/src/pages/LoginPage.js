@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../api/api";
+import { AuthProvider, AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // const [account, setAccount] = useState("");
   const [error, setError] = useState("");
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate(); 
 
   const handleLogin = async (e) => {
@@ -24,21 +26,25 @@ const LoginPage = () => {
     }
 
     try {
-        const data = await loginUser(email, password);
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user)); 
+        const data = await login(email, password);
+        console.log("Phản hồi từ APIsssssss:", data); // Kiểm tra phản hồi API
+        // localStorage.setItem("token", data.token);
+        // localStorage.setItem("user", JSON.stringify(data.user)); 
         
         setError("");
-        // Kiểm tra quyền và điều hướng
-        if (data.user.Account && data.user.Account.toLowerCase() === "manager") {
+        
+        if (data && data.Account === "Manager") {
             alert("Navigating to /admin...");
             navigate("/admin"); 
         } else {
-          alert("Navigating to /home...");
+            alert("Navigating to /home...");
             navigate("/home");
         }
     } catch (error) {
-        setError("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
+      // const data = await login(email, password,account);
+      // console.log("Dữ liệu gửi đi2:", { email, password,data }); // Kiểm tra dữ liệu gửi đi
+      // console.log("Phản hồi từ APIsssssssaaaa:", data.user); // Kiểm tra phản hồi API
+      setError("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
     }
 };
 
@@ -65,9 +71,10 @@ const LoginPage = () => {
               placeholder="Mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </div>
-
+          
           <button type="submit" id = "loginButton" className="btn btn-primary w-100">
             Đăng nhập
           </button>

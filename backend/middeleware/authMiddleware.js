@@ -44,7 +44,7 @@ const authenticateUser = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, "SECRET_KEY"); // Thay SECRET_KEY bằng key của bạn
-        req.user = decoded; // Lưu thông tin user vào req
+        req.user = decoded;
         next();
 
     } catch (error) {

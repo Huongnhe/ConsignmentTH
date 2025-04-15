@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const API_URL = "http://localhost:8000/auth"; // URL của backend
-export const loginUser = async (email, password) => {
+export const loginUser = async (email, password, account) => {
 
     try {
-        const response = await axios.post(`${API_URL}/login`, { email, password });
+        const response = await axios.post(`${API_URL}/login`, { email, password ,account});
         console.log("Phản hồi từ API:", response.data); // Kiểm tra phản hồi API
         return response.data;
     } catch (error) {
@@ -24,10 +24,9 @@ export const registerUser = async (userData) => {
     }
 };
 
-// Lấy danh sách sản phẩm ký gửi của user
 export const getUserProducts = async (token) => {
     try {
-        const response = await axios.post(`${API_URL}/products`, {
+        const response = await axios.post(`${API_URL}/consigns`, {}, {
             headers: { Authorization: `Bearer ${token}` },
         });
         return response.data;
@@ -36,4 +35,29 @@ export const getUserProducts = async (token) => {
         throw error;
     }
 };
+
+export const getProductDetails = async (productId, token) => {
+    try {
+        const response = await axios.post(`${API_URL}/consigns/${productId}`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi khi lấy chi tiết sản phẩm:", error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const createConsign= async (token, consignmentData) => {
+    try {
+        const response = await axios.post(`${API_URL}/create_consign`, consignmentData, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi khi tạo đơn ký gửi:", error.response?.data || error.message);
+        throw error;
+    }
+};
+
 

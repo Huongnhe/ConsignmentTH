@@ -4,7 +4,7 @@ function getUserByEmail(email, callback) {
     const sql = "SELECT * FROM th_user WHERE email = ?";
     pool.query(sql, [email], (err, results) => {
         if (err) return callback(err, null);
-        if (results.length === 0) return callback(null, null);
+        if (results.length === 0) return callback(null, null, null);
         callback(null, results[0]); 
     });
 }

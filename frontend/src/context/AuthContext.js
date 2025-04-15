@@ -5,12 +5,19 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(true); // Thêm dòng này
+
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         console.log("User từ localStorage:", storedUser);
         if (storedUser) {
-            setUser(JSON.parse(storedUser)); // Cập nhật user từ localStorage
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (error) {
+                console.error("Lỗi khi phân tích dữ liệu user từ localStorage:", error);
+            }
         }
+        setLoading(false); // Sau khi check xong thì set false
     }, []);
 
     const login = async (email, password) => {
@@ -19,10 +26,11 @@ export const AuthProvider = ({ children }) => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password}),
+                
             });
+            console.log("Dữ liệu gửi đi:", { email, password });
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
@@ -30,53 +38,27 @@ export const AuthProvider = ({ children }) => {
             }
 
             const data = await res.json();
+            console.log("Phản hồi từ API aaaaaaaaaaaa:", data);
             localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user));
-            setUser(data.user);
             
+            localStorage.setItem("user", JSON.stringify(data.user));
+            
+            setUser(data.user);
+            return data.user; // Trả về user sau khi đăng nhập thành công
         } catch (error) {
             alert(error.message);
-        }
-    };
-
-    const register = async (userData) => {
-        try {
-            console.log("Gửi request đăng ký:", userData); // Debug request
-
-            const res = await fetch("http://localhost:8000/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(userData),
-            });
-
-            console.log("Response status:", res.status); // Kiểm tra status code
-
-            const data = await res.json().catch(() => ({}));
-            console.log("Response data:", data); // In ra dữ liệu trả về từ server
-
-            if (!res.ok) {
-                throw new Error(data.error || `Lỗi: ${res.status}`);
-            }
-
-            localStorage.setItem("token", data.token);
-            setUser(data.user);
-            setMessage(data.message || "Đăng ký thành công!");
-        } catch (error) {
-            console.error("Lỗi khi đăng ký:", error.message);
-            setMessage(error.message || "Lỗi kết nối đến server!");
+            // throw error;
         }
     };
 
     const logout = () => {
         localStorage.removeItem("token");
-        localStorage.removeItem("user");  // Xóa cả user nếu cần
+        localStorage.removeItem("user");
         setUser(null);
-        window.location.href = "/login";
     };
-    
 
     return (
-        <AuthContext.Provider value={{ user, message, login, logout, register }}>
+        <AuthContext.Provider value={{ user, login, logout, message, loading }}>
             {children}
         </AuthContext.Provider>
     );

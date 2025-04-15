@@ -8,16 +8,16 @@ const NavbarUser = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); 
+    logout();
     navigate("/login");
   };
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
       <div className="container">
-        <Link className="navbar-brand fw-bold text-uppercase" to="/">
+        <a className="navbar-brand fw-bold text-uppercase" to="/">
           Ký Gửi Hàng Hiệu
-        </Link>
+        </a>
         <button
           className="navbar-toggler"
           type="button"
@@ -34,13 +34,13 @@ const NavbarUser = () => {
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link fw-semibold px-3" to="/consign">
-                Ký Gửi
+              <Link className="nav-link fw-semibold px-3" to="/consigns">
+                Trạng Thái Đơn
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link fw-semibold px-3" to="/status">
-                Trạng Thái Đơn
+              <Link className="nav-link fw-semibold px-3" to="/createConsign">
+                Ký Gửi
               </Link>
             </li>
             <li className="nav-item">

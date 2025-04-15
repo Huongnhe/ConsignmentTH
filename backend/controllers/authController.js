@@ -37,7 +37,7 @@ async function register(req, res) {
 }
 
 function login(req, res) {
-    const { email, password } = req.body;
+    const { email, password, account} = req.body;
     getUserByEmail(email, (err, user) => {
         if (err) {
             console.error("Lỗi getUserByEmail:", err);
@@ -57,6 +57,9 @@ function login(req, res) {
             console.log("Sai mật khẩu!");
             return res.status(401).json({ message: "Sai mật khẩu" });
         }
+
+        
+
         const token = jwt.sign({ id: user.ID, email: user.Email }, process.env["SECRET_KEY"], { expiresIn: "1h" });
         console.log("Token được tạo:", token);
         console.log("SECRET_KEY:", process.env["SECRET_KEY"]);
@@ -68,6 +71,7 @@ function login(req, res) {
 
 
         console.log("Đăng nhập thành công!");
+
         return res.json({ message: "Đăng nhập thành công!", token, user });
         // return res.json({ token, user });
         // return res.json({ message: "Đăng nhập thành công", user });

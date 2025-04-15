@@ -14,11 +14,12 @@
 //     next();
 // });
 // app.listen(8000, () => console.log("Server chạy trên cổng 8000"));
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 const authRoutes = require("./routes/authRoutes"); // Đảm bảo import router
-require("dotenv").config();
+
 
 const app = express();
 app.use(cors());
@@ -37,4 +38,5 @@ app.use("/auth", (req, res, next) => {
 // Thêm lại router
 app.use("/auth", authRoutes);
 
-app.listen(8000, () => console.log("Server chạy trên cổng 8000"));
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`Server chạy trên cổng ${PORT}`));

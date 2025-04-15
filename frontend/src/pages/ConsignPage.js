@@ -7,37 +7,31 @@ import Navbar from "./MenuUser.js";
 
 const ConsignmentPage = () => {
     const { user } = useContext(AuthContext);
+    console.log("User từ AuthContext:", user);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // useEffect(() => {
-    //     console.log("useEffect chạy với user:", user);
-    //     if (user && user.token) {
-    //         fetchUserProducts();
-    //     }
-    // }, [user]);
-
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        console.log("useEffect chạy với user:", user);
+        if (user) {
+            fetchUserProducts();
         }
-    }, []);
-    
+    }, [user]);
 
     const fetchUserProducts = async () => {
         const token = localStorage.getItem("token");
+        console.log("Token từ localStorage:", token); // Kiểm tra token
         if (!token) {
             setError("Người dùng chưa đăng nhập");
             return;
         }
-
+    
         setLoading(true);
         setError(null);
         try {
             const data = await getUserProducts(token);
-            console.log("Dữ liệu API trả về:", data);
+            console.log("Dữ liệu API trả về nhe:", data); // Kiểm tra dữ liệu trả về
             setProducts(data);
         } catch (error) {
             console.error("Lỗi khi lấy sản phẩm:", error);
@@ -61,23 +55,28 @@ const ConsignmentPage = () => {
                     <table className="table table-bordered">
                         <thead className="table-dark">
                             <tr>
-                                <th>#</th>
-                                <th>Tên Sản Phẩm</th>
-                                <th>Giá Bán</th>
+                                <th>Mã hóa đơn</th>
                                 <th>Thương Hiệu</th>
                                 <th>Loại</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>Số Lượng</th>
+                                <th>Giá Bán</th>
+                                
                                 <th>Trạng Thái</th>
+                                <th>Chi Tiết</th> {/* Thêm cột Chi Tiết */}
                             </tr>
                         </thead>
                         <tbody>
                             {products.length > 0 ? (
                                 products.map((p, index) => (
                                     <tr key={index}>
-                                        <td>{index + 1}</td>
-                                        <td>{p.Product_name}</td>
-                                        <td>{p.Sale_price} VNĐ</td>
+                                        <td>{p.ID}</td>
                                         <td>{p.Brand_name}</td>
                                         <td>{p.Product_type_name}</td>
+                                        <td>{p.Product_name}</td>
+                                        <td>{p.Quantity}</td>
+                                        <td>{p.Sale_price} VNĐ</td>
+                                        
                                         <td>
                                             <span
                                                 className={`badge ${p.Status === "Consigned" ? "bg-info" :
@@ -88,20 +87,24 @@ const ConsignmentPage = () => {
                                                 {p.Status}
                                             </span>
                                         </td>
+                                        <td>
+                                            {/* Nút chi tiết cho mỗi sản phẩm */}
+                                            <Link to={`/consignment-detail/${p.id}`} className="btn btn-info btn-sm">
+                                                Chi Tiết
+                                            </Link>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="text-center text-muted">Chưa có sản phẩm nào.</td>
+                                    <td colSpan="7" className="text-center text-muted">Chưa có sản phẩm nào.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 )}
 
-                <div className="text-center mt-4">
-                    <Link to="/" className="btn btn-secondary">Quay lại Trang Chủ</Link>
-                </div>
+                
             </div>
         </div>
     );
