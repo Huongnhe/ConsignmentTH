@@ -1,39 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../api/api";
+import { AuthProvider, AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // const [account, setAccount] = useState("");
   const [error, setError] = useState("");
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate(); 
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      setError("Vui lòng nhập email và mật khẩu.");
-      return;
+        setError("Vui lòng nhập email và mật khẩu.");
+        return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Email không hợp lệ.");
-      return;
+        setError("Email không hợp lệ.");
+        return;
     }
 
     try {
-      const data = await loginUser(email, password);
-      console.log("Đăng nhập thành công:", data);
-      localStorage.setItem("token", data.token);
-      setError("");
-
-      navigate("/home");
+        const data = await login(email, password);
+        console.log("Phản hồi từ APIsssssss:", data); // Kiểm tra phản hồi API
+        // localStorage.setItem("token", data.token);
+        // localStorage.setItem("user", JSON.stringify(data.user)); 
+        
+        setError("");
+        
+        if (data && data.Account === "Manager") {
+            alert("Navigating to /admin...");
+            navigate("/admin"); 
+        } else {
+            alert("Navigating to /home...");
+            navigate("/home");
+        }
     } catch (error) {
+      // const data = await login(email, password,account);
+      // console.log("Dữ liệu gửi đi2:", { email, password,data }); // Kiểm tra dữ liệu gửi đi
+      // console.log("Phản hồi từ APIsssssssaaaa:", data.user); // Kiểm tra phản hồi API
       setError("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
     }
-  };
+};
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -58,9 +71,10 @@ const LoginPage = () => {
               placeholder="Mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </div>
-
+          
           <button type="submit" id = "loginButton" className="btn btn-primary w-100">
             Đăng nhập
           </button>

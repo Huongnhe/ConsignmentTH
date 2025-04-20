@@ -4,66 +4,47 @@ require("dotenv").config();
 
 // Đăng ký user
 async function register(req, res) {
-    console.log("Request received:", req.body);
+    try {
+        const { username, email, password } = req.body;
 
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-        console.log("Thiếu thông tin đăng ký!");
-        return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin." });
-    }
-
-    getUserByEmail(email, (err, result) => {
-        if (err) {
-            console.error("Lỗi getUserByEmail:", err);
-            return res.status(500).json({ message: "Lỗi server", error: err.message });
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin." });
         }
 
-        console.log("Kết quả getUserByEmail:", result);
-
-        if (result) {
-            console.log("Email đã tồn tại!");
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
             return res.status(400).json({ message: "Email đã tồn tại!" });
         }
 
-        createUser(username, email, password, (err) => {
-            if (err) {
-                console.error("Lỗi khi lưu vào database:", err);
-                return res.status(500).json({ message: "Lỗi khi lưu vào database!" });
-            }
-            console.log("Đăng ký thành công!");
-            res.status(201).json({ message: "Đăng ký thành công!" });
-        });
-    });
+        await createUser(username, email, password);
+        return res.status(201).json({ message: "Đăng ký thành công!" });
+    } catch (error) {
+        console.error("Lỗi đăng ký:", error);
+        return res.status(500).json({ message: "Lỗi server", error: error.message });
+    }
 }
 
 // Đăng nhập
-function login(req, res) {
-    const { email, password } = req.body;
+async function login(req, res) {
+    try {
+        const { email, password } = req.body;
 
-    getUserByEmail(email, (err, user) => {
-        if (err) {
-            console.error("Lỗi getUserByEmail:", err);
-            return res.status(500).json({ message: "Lỗi server", error: err.message });
-        }
-        console.log("Kết quả getUserByEmail:", user);
-
+        const user = await getUserByEmail(email);
         if (!user) {
-            console.log("User không tồn tại!");
             return res.status(404).json({ message: "User không tồn tại" });
         }
 
-        console.log("Mật khẩu trong DB:", user.Password_User);
-        console.log("Mật khẩu người dùng nhập:", password);
-
         if (user.Password_User !== password) {
-            console.log("Sai mật khẩu!");
             return res.status(401).json({ message: "Sai mật khẩu" });
         }
 
-        console.log("Đăng nhập thành công!");
-        res.json({ message: "Đăng nhập thành công", user });
-    });
+        const token = jwt.sign({ id: user.ID, email: user.Email }, process.env.SECRET_KEY, { expiresIn: "1h" });
+
+        return res.json({ message: "Đăng nhập thành công!", token, user });
+    } catch (error) {
+        console.error("Lỗi đăng nhập:", error);
+        return res.status(500).json({ message: "Lỗi server", error: error.message });
+    }
 }
 
 module.exports = { register, login };

@@ -4,14 +4,19 @@ import { AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const HomePageAdmin = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!user || user.role !== "manage") {
-            navigate("/home"); // Chuyển hướng đến trang User nếu không phải admin
+        if (!user || user.Account !== "Manager") {
+            navigate("/home"); 
         }
     }, [user, navigate]);
+
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
 
     return (
         <div>
@@ -30,16 +35,16 @@ const HomePageAdmin = () => {
                     <div className="collapse navbar-collapse" id="navbarNav">
                         <ul className="navbar-nav ms-auto">
                             <li className="nav-item">
-                                <Link className="nav-link" to="/admin/consignments">Quản lý Ký Gửi</Link>
+                                <Link className="nav-link" to="/admin/consignments">Ký Gửi</Link>
                             </li>
                             <li className="nav-item">
-                                <Link className="nav-link" to="/admin/orders">Quản lý Đơn Hàng</Link>
+                                <Link className="nav-link" to="/admin/orders">Đơn Hàng</Link>
                             </li>
                             <li className="nav-item">
-                                <Link className="nav-link" to="/admin/categories">Quản lý Danh Mục</Link>
+                                <Link className="nav-link" to="/admin/categories">Danh Mục</Link>
                             </li>
                             <li className="nav-item">
-                                <Link className="nav-link btn btn-outline-primary me-2" to="/login">Đăng Xuất</Link>
+                                <button className="btn btn-outline-danger" onClick={handleLogout}>Đăng Xuất</button>
                             </li>
                         </ul>
                     </div>
