@@ -17,11 +17,11 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-// const jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const authRoutes = require("./routes/authRoutes"); // Đảm bảo import router
-
-
 const app = express();
+
+// Cấu hình cors
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -38,5 +38,5 @@ app.use("/auth", (req, res, next) => {
 // Thêm lại router
 app.use("/auth", authRoutes);
 
-const PORT = process.env.PORT || 8000;
+const PORT = 8000;
 app.listen(PORT, () => console.log(`Server chạy trên cổng ${PORT}`));
