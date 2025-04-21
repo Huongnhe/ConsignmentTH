@@ -4,7 +4,7 @@ import { useAuthDetail } from "../context/AuthDetail";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser";
 
-const ProductDetailPage = () => {
+const ConsignmentDetailPage = () => {
     const { id } = useParams();
     const prevIdRef = useRef(null);
     const { consignmentDetail, fetchConsignmentDetail, loading, error } = useAuthDetail();
@@ -19,6 +19,12 @@ const ProductDetailPage = () => {
         }
     }, [id, fetchConsignmentDetail]);
 
+    useEffect(() => {
+        if (consignmentDetail) {
+            setUpdatedConsignmentDetail({ ...consignmentDetail });
+        }
+    }, [consignmentDetail]);
+
     const handleUpdate = () => {
         console.log("Cập nhật chi tiết đơn ký gửi:", updatedConsignmentDetail);
         // TODO: Gọi API cập nhật dữ liệu backend
@@ -31,6 +37,15 @@ const ProductDetailPage = () => {
         navigate("/consignment");
     };
 
+    const handleProductChange = (index, field, value) => {
+        const updatedProducts = [...updatedConsignmentDetail.Products];
+        updatedProducts[index][field] = value;
+        setUpdatedConsignmentDetail({
+            ...updatedConsignmentDetail,
+            Products: updatedProducts
+        });
+    };
+
     if (loading) return <div className="text-center">Đang tải...</div>;
     if (error) return <div className="text-center text-danger">{error}</div>;
     if (!consignmentDetail) return <div className="text-center">Không có chi tiết đơn ký gửi</div>;
@@ -40,75 +55,142 @@ const ProductDetailPage = () => {
             <Navbar />
             <div className="container mt-5">
                 <h2 className="text-center text-primary">Chi Tiết Đơn Ký Gửi</h2>
+
+                {/* Thông tin chung về đơn */}
+                <div className="card mb-4">
+                    <div className="card-body">
+                        <h4>Thông tin đơn ký gửi</h4>
+                        <p><strong>Mã đơn:</strong> {consignmentDetail.Consignment_ID}</p>
+                        <p><strong>Ngày tạo đơn:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
+                        <p><strong>Tên khách hàng:</strong> {consignmentDetail.Customer_Name}</p>
+                        <p><strong>Email khách hàng:</strong> {consignmentDetail.Customer_Email}</p>
+                        <p><strong>Tình trạng đơn:</strong> {consignmentDetail.Consignment_Status}</p>
+                    </div>
+                </div>
+
+                {/* Danh sách sản phẩm */}
                 <div className="card">
                     <div className="card-body">
+                        <h4>Danh sách sản phẩm trong đơn</h4>
+
                         {isEditMode ? (
                             <div>
-                                <h5>Chỉnh sửa thông tin</h5>
-                                <div className="form-group">
-                                    <label>Tên sản phẩm</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={updatedConsignmentDetail.Product_Name || consignmentDetail.Product_Name}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Product_Name: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Thương hiệu</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={updatedConsignmentDetail.Brand_Name || consignmentDetail.Brand_Name}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Brand_Name: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Giá bán ký gửi</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={updatedConsignmentDetail.Consignment_Price || consignmentDetail.Consignment_Price}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Consignment_Price: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Số lượng</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={updatedConsignmentDetail.Quantity || consignmentDetail.Quantity}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Quantity: e.target.value })}
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <label>Tình trạng đơn ký gửi</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={updatedConsignmentDetail.Consignment_Status || consignmentDetail.Consignment_Status}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Consignment_Status: e.target.value })}
-                                    />
-                                </div>
+                                <table className="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Tên sản phẩm</th>
+                                            <th>Thương hiệu</th>
+                                            <th>Loại sản phẩm</th>
+                                            <th>Giá góc</th>
+                                            <th>Giá ký gửi</th>
+                                            <th>Số lượng</th>
+                                            <th>Tình trạng sản phẩm</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {updatedConsignmentDetail.Products?.map((product, index) => (
+                                            <tr key={index}>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={product.Product_Name || ""}
+                                                        onChange={(e) => handleProductChange(index, "Product_Name", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={product.Brand_Name || ""}
+                                                        onChange={(e) => handleProductChange(index, "Brand_Name", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={product.Product_Type_Name || ""}
+                                                        onChange={(e) => handleProductChange(index, "Product_Type_Name", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={product.Original_Price || ""}
+                                                        onChange={(e) => handleProductChange(index, "Original_Price", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={product.Consignment_Price || ""}
+                                                        onChange={(e) => handleProductChange(index, "Consignment_Price", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        value={product.Quantity || ""}
+                                                        onChange={(e) => handleProductChange(index, "Quantity", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        value={product.Product_Status || ""}
+                                                        onChange={(e) => handleProductChange(index, "Product_Status", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-danger">Xóa</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                                 <button onClick={handleUpdate} className="btn btn-primary">Cập nhật</button>
                                 <button onClick={() => setIsEditMode(false)} className="btn btn-secondary ml-2">Hủy</button>
                             </div>
                         ) : (
                             <div>
-                                <p><strong>Tên sản phẩm:</strong> {consignmentDetail.Product_Name || "Không có tên sản phẩm"}</p>
-                                <p><strong>Thương hiệu:</strong> {consignmentDetail.Brand_Name || "Không có thương hiệu"}</p>
-                                <p><strong>Loại sản phẩm:</strong> {consignmentDetail.Product_Type_Name || "Không có loại sản phẩm"}</p>
-                                <p><strong>Giá gốc:</strong> {consignmentDetail.Original_Price ? `${consignmentDetail.Original_Price} VNĐ` : "Không có"}</p>
-                                <p><strong>Giá bán ký gửi:</strong> {consignmentDetail.Consignment_Price ? `${consignmentDetail.Consignment_Price} VNĐ` : "Không có"}</p>
-                                <p><strong>Số lượng:</strong> {consignmentDetail.Quantity || "Không có"}</p>
-                                <p><strong>Tình trạng sản phẩm:</strong> {consignmentDetail.Product_Status || "Không có"}</p>
-                                <p><strong>Tình trạng đơn:</strong> {consignmentDetail.Consignment_Status || "Không có"}</p>
-                                <p><strong>Ngày tạo đơn:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
-                                <p><strong>Tên khách hàng:</strong> {consignmentDetail.Customer_Name || "Không có"}</p>
-                                <p><strong>Email khách hàng:</strong> {consignmentDetail.Customer_Email || "Không có"}</p>
-
-                                <button onClick={() => setIsEditMode(true)} className="btn btn-warning mr-2">Chỉnh sửa</button>
-                                <button onClick={handleDelete} className="btn btn-danger">Xóa</button>
+                                <table className="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Tên sản phẩm</th>
+                                            <th>Thương hiệu</th>
+                                            <th>Loại sản phẩm</th>
+                                            <th>Giá góc</th>
+                                            <th>Giá ký gửi</th>
+                                            <th>Số lượng</th>
+                                            <th>Tình trạng sản phẩm</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {consignmentDetail.Products?.map((product, index) => (
+                                            <tr key={index}>
+                                                <td>{product.Product_Name}</td>
+                                                <td>{product.Brand_Name}</td>
+                                                <td>{product.Product_Type_Name}</td>
+                                                <td>{product.Original_Price ? `${product.Original_Price} VNĐ` : "Không có"}</td>
+                                                <td>{product.Consignment_Price ? `${product.Consignment_Price} VNĐ` : "Không có"}</td>
+                                                <td>{product.Quantity || "Không có"}</td>
+                                                <td>{product.Product_Status || "Không có"}</td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-danger">Xóa</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <button onClick={() => setIsEditMode(true)} className="btn btn-warning mr-2">Chỉnh sửa đơn</button>
+                                <button onClick={handleDelete} className="btn btn-danger">Xóa đơn</button>
                             </div>
                         )}
                     </div>
@@ -118,4 +200,4 @@ const ProductDetailPage = () => {
     );
 };
 
-export default ProductDetailPage;
+export default ConsignmentDetailPage;

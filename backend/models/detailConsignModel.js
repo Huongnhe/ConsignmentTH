@@ -31,8 +31,32 @@ const getConsignmentDetail = async (consignmentId) => {
     `;
 
     const [rows] = await db.execute(query, [consignmentId]);
-    
-    return rows;
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    // Format dữ liệu
+    const result = {
+        Consignment_ID: rows[0].Consignment_ID,
+        Consignment_Status: rows[0].Consignment_Status,
+        Consignment_Create_Date: rows[0].Consignment_Create_Date,
+        Customer_Name: rows[0].Customer_Name,
+        Customer_Email: rows[0].Customer_Email,
+        Products: rows.map(row => ({
+            Product_ID: row.Product_ID,
+            Product_Name: row.Product_Name,
+            Sale_Price: row.Sale_Price,
+            Original_Price: row.Original_Price,
+            Product_Status: row.Product_Status,
+            Brand_Name: row.Brand_Name,
+            Product_Type_Name: row.Product_Type_Name,
+            Quantity: row.Quantity,
+            Consignment_Price: row.Consignment_Price
+        }))
+    };
+
+    return result;
 };
 
 module.exports = {
