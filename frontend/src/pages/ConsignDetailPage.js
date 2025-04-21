@@ -1,56 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";  // Sử dụng useNavigate thay cho useHistory
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuthDetail } from "../context/AuthDetail";
 import "bootstrap/dist/css/bootstrap.min.css";
-import Navbar from "./MenuUser"; // Giả sử bạn đã có Navbar
+import Navbar from "./MenuUser";
 
 const ProductDetailPage = () => {
-    const { id } = useParams(); // Lấy ID từ URL
-    const prevIdRef = useRef(null); // Đảm bảo prevIdRef khởi tạo đúng
+    const { id } = useParams();
+    const prevIdRef = useRef(null);
     const { consignmentDetail, fetchConsignmentDetail, loading, error } = useAuthDetail();
     const [isEditMode, setIsEditMode] = useState(false);
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
-    const navigate = useNavigate();  // Sử dụng useNavigate thay cho useHistory
+    const navigate = useNavigate();
 
     useEffect(() => {
-        // Chỉ gọi lại API khi id thay đổi và id mới khác id cũ
         if (id !== prevIdRef.current) {
-            console.log("ID thay đổi, gọi lại fetchConsignmentDetail");
             fetchConsignmentDetail(id);
-            prevIdRef.current = id;  // Cập nhật prevIdRef sau khi gọi API
+            prevIdRef.current = id;
         }
     }, [id, fetchConsignmentDetail]);
 
-    // Hàm cập nhật chi tiết đơn ký gửi
     const handleUpdate = () => {
-        // Giả sử có một API để cập nhật dữ liệu
         console.log("Cập nhật chi tiết đơn ký gửi:", updatedConsignmentDetail);
-        // TODO: Gọi API để cập nhật dữ liệu
-        setIsEditMode(false); // Chuyển lại chế độ xem sau khi cập nhật
+        // TODO: Gọi API cập nhật dữ liệu backend
+        setIsEditMode(false);
     };
 
-    // Hàm xóa đơn ký gửi
     const handleDelete = () => {
         console.log("Xóa đơn ký gửi với ID:", consignmentDetail.Consignment_ID);
-        // TODO: Gọi API để xóa đơn ký gửi
-        navigate("/consignment"); // Điều hướng về trang danh sách sau khi xóa
+        // TODO: Gọi API xóa
+        navigate("/consignment");
     };
 
-    if (loading) {
-        return <div className="text-center">Đang tải...</div>;
-    }
-
-    if (error) {
-        return <div className="text-center text-danger">{error}</div>;
-    }
-
-    if (!consignmentDetail) {
-        return <div className="text-center">Không có chi tiết đơn ký gửi</div>;
-    }
+    if (loading) return <div className="text-center">Đang tải...</div>;
+    if (error) return <div className="text-center text-danger">{error}</div>;
+    if (!consignmentDetail) return <div className="text-center">Không có chi tiết đơn ký gửi</div>;
 
     return (
         <div>
-            <Navbar /> {/* Thêm Navbar vào trang chi tiết */}
+            <Navbar />
             <div className="container mt-5">
                 <h2 className="text-center text-primary">Chi Tiết Đơn Ký Gửi</h2>
                 <div className="card">
@@ -77,16 +64,25 @@ const ProductDetailPage = () => {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Giá bán</label>
+                                    <label>Giá bán ký gửi</label>
                                     <input
                                         type="number"
                                         className="form-control"
-                                        value={updatedConsignmentDetail.Sale_Price || consignmentDetail.Sale_Price}
-                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Sale_Price: e.target.value })}
+                                        value={updatedConsignmentDetail.Consignment_Price || consignmentDetail.Consignment_Price}
+                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Consignment_Price: e.target.value })}
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Tình trạng</label>
+                                    <label>Số lượng</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        value={updatedConsignmentDetail.Quantity || consignmentDetail.Quantity}
+                                        onChange={(e) => setUpdatedConsignmentDetail({ ...updatedConsignmentDetail, Quantity: e.target.value })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Tình trạng đơn ký gửi</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -102,10 +98,15 @@ const ProductDetailPage = () => {
                                 <p><strong>Tên sản phẩm:</strong> {consignmentDetail.Product_Name || "Không có tên sản phẩm"}</p>
                                 <p><strong>Thương hiệu:</strong> {consignmentDetail.Brand_Name || "Không có thương hiệu"}</p>
                                 <p><strong>Loại sản phẩm:</strong> {consignmentDetail.Product_Type_Name || "Không có loại sản phẩm"}</p>
-                                <p><strong>Giá bán:</strong> {consignmentDetail.Sale_Price ? `${consignmentDetail.Sale_Price} VNĐ` : "Không có giá"}</p>
+                                <p><strong>Giá gốc:</strong> {consignmentDetail.Original_Price ? `${consignmentDetail.Original_Price} VNĐ` : "Không có"}</p>
+                                <p><strong>Giá bán ký gửi:</strong> {consignmentDetail.Consignment_Price ? `${consignmentDetail.Consignment_Price} VNĐ` : "Không có"}</p>
+                                <p><strong>Số lượng:</strong> {consignmentDetail.Quantity || "Không có"}</p>
+                                <p><strong>Tình trạng sản phẩm:</strong> {consignmentDetail.Product_Status || "Không có"}</p>
+                                <p><strong>Tình trạng đơn:</strong> {consignmentDetail.Consignment_Status || "Không có"}</p>
                                 <p><strong>Ngày tạo đơn:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
-                                <p><strong>Tình trạng đơn:</strong> {consignmentDetail.Consignment_Status || "Chưa có tình trạng"}</p>
-                                <p><strong>Email khách hàng:</strong> {consignmentDetail.Customer_Email || "Không có email"}</p>
+                                <p><strong>Tên khách hàng:</strong> {consignmentDetail.Customer_Name || "Không có"}</p>
+                                <p><strong>Email khách hàng:</strong> {consignmentDetail.Customer_Email || "Không có"}</p>
+
                                 <button onClick={() => setIsEditMode(true)} className="btn btn-warning mr-2">Chỉnh sửa</button>
                                 <button onClick={handleDelete} className="btn btn-danger">Xóa</button>
                             </div>
