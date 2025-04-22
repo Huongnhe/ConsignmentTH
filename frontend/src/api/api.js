@@ -60,7 +60,7 @@ export const createConsign = async (token, consignmentData) => {
     }
 };
 
-// Trong file API, sửa thành:
+
 export const fetchConsignmentDetailAPI = async (token, consignmentId) => {
     try {
         const response = await axios.post(
@@ -84,4 +84,20 @@ export const fetchConsignmentDetailAPI = async (token, consignmentId) => {
 };
 
 
-
+export const getAllConsignmentTicketsAPI = async (token) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/admin/consignments`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("Dữ liệu nhận được từ API trả về mảng danh sách sản phẩm:", response.data); // dòng cần thêm
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy tất cả phiếu ký gửi:", error.response?.data || error.message);
+      throw error;
+    }
+  };
+  

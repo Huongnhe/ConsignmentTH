@@ -34,12 +34,16 @@ const LoginPage = () => {
         setError("");
         
         if (data && data.Account === "Manager") {
-            alert("Navigating to /admin...");
+            // alert("Navigating to /admin...");
             navigate("/admin"); 
-        } else {
-            alert("Navigating to /home...");
-            navigate("/home");
+        } else if(data && data.Account === "Staff"){
+            // alert("Navigating to /home...");
+            navigate("/");
         }
+        else if(data && data.Account === "Customer"){
+          // alert("Navigating to /home...");
+          navigate("/home");
+      }
     } catch (error) {
       // const data = await login(email, password,account);
       // console.log("Dữ liệu gửi đi2:", { email, password,data }); // Kiểm tra dữ liệu gửi đi

@@ -2,24 +2,28 @@ const { createConsignment } = require("../models/CreateConsignModel");
 
 const createConsignController = async (req, res) => {
     const userId = req.user?.id;
-    const productData = req.body;
-
-    // Kiểm tra dữ liệu đầu vào
-    if (!productData.Brand_name || !productData.Product_name) {
-        return res.status(400).json({ error: "Dữ liệu sản phẩm không đầy đủ" });
-    }
+    const productList = req.body; // <-- Chấp nhận mảng sản phẩm
 
     if (!userId) {
         return res.status(401).json({ error: "Bạn phải đăng nhập để thực hiện thao tác này" });
     }
 
+    // Kiểm tra đầu vào là mảng và có ít nhất một sản phẩm
+    if (!Array.isArray(productList) || productList.length === 0) {
+        return res.status(400).json({ error: "Danh sách sản phẩm không hợp lệ hoặc trống" });
+    }
+
+    // Kiểm tra từng sản phẩm trong danh sách có đủ thông tin
+    const invalidItem = productList.find(p => !p.Brand_name || !p.Product_name || !p.Product_type_name);
+    if (invalidItem) {
+        return res.status(400).json({ error: "Một hoặc nhiều sản phẩm thiếu thông tin bắt buộc" });
+    }
+
     try {
-        const result = await createConsignment(productData, userId);
+        const result = await createConsignment(productList, userId);
         res.status(201).json({
-            message: "Tạo đơn ký gửi thành công!",
-            ticketId: result.ticketId,
-            productId: result.productId,
-            // Nếu cần có thể thêm thông tin khác như tên sản phẩm, trạng thái...
+            message: result.message,
+            ticketId: result.ticketId
         });
     } catch (error) {
         console.error("Lỗi khi tạo đơn ký gửi:", error);
