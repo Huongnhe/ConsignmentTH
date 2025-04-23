@@ -134,3 +134,4 @@ export const rejectConsignmentTicketAPI = async (token, ticketID) => {
         throw error;
     }
     };
+
