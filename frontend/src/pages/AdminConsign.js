@@ -8,7 +8,9 @@ const AdminConsign = () => {
     fetchAllConsignmentTickets,
     loading,
     error,
-    refreshData
+    refreshData,
+    approveConsignmentTicket,
+    rejectConsignmentTicket 
   } = useAdminConsignment();
 
   useEffect(() => {
@@ -22,6 +24,18 @@ const AdminConsign = () => {
       case 'đang chờ': return 'warning';
       default: return 'secondary';
     }
+  };
+
+  const handleApprove = (ticketID) => {
+    // Gọi API hoặc cập nhật trạng thái phiếu ký gửi thành 'approve'
+    approveConsignmentTicket(ticketID, 'approved');
+    refreshData();  // Refresh lại dữ liệu sau khi cập nhật trạng thái
+  };
+
+  const handleReject = (ticketID) => {
+    // Gọi API hoặc cập nhật trạng thái phiếu ký gửi thành 'từ chối'
+    rejectConsignmentTicket (ticketID, 'rejected');
+    refreshData();  // Refresh lại dữ liệu sau khi cập nhật trạng thái
   };
 
   return (
@@ -87,53 +101,58 @@ const AdminConsign = () => {
                           <p><strong>Email:</strong> {ticket.Email}</p>
                         </div>
                         <div className="col-md-6">
-                          <p><strong>Ngày tạo:</strong> {ticket.CreatedDate || '--/--/----'}</p>
+                          <p><strong>Ngày tạo:</strong> {ticket.Create_date || '--/--/----'}</p>
                           <p><strong>Ghi chú:</strong> {ticket.Note || 'Không có'}</p>
                         </div>
                       </div>
 
-                     <h6 className="mb-3">Danh sách sản phẩm</h6>
+                      <h6 className="mb-3">Danh sách sản phẩm</h6>
 
-                        {ticket.products && ticket.products.length > 0 ? (
+                      {ticket.products && ticket.products.length > 0 ? (
                         <div className="table-responsive">
-                            <table className="table table-bordered table-sm table-hover align-middle text-center">
+                          <table className="table table-bordered table-sm table-hover align-middle text-center">
                             <thead className="table-light">
-                                <tr>
+                              <tr>
                                 <th className="text-start">Tên sản phẩm</th>
                                 <th>SL</th>
                                 <th>Giá gốc</th>
                                 <th>Giá bán</th>
                                 <th>Thương hiệu</th>
                                 <th>Loại</th>
-                                </tr>
+                              </tr>
                             </thead>
                             <tbody>
-                                {ticket.products.map((product, idx) => (
+                              {ticket.products.map((product, idx) => (
                                 <tr key={idx}>
-                                    <td className="text-start">{product.Product_name}</td>
-                                    <td>{product.Quantity}</td>
-                                    <td>{Number(product.Original_price).toLocaleString()}đ</td>
-                                    <td>{Number(product.Sale_price).toLocaleString()}đ</td>
-                                    <td>{product.Brand_name || '-'}</td>
-                                    <td>{product.Product_type_name || '-'}</td>
+                                  <td className="text-start">{product.Product_name}</td>
+                                  <td>{product.Quantity}</td>
+                                  <td>{Number(product.Original_price).toLocaleString()}đ</td>
+                                  <td>{Number(product.Sale_price).toLocaleString()}đ</td>
+                                  <td>{product.Brand_name || '-'}</td>
+                                  <td>{product.Product_type_name || '-'}</td>
                                 </tr>
-                                ))}
+                              ))}
                             </tbody>
-                            </table>
+                          </table>
                         </div>
-                        ) : (
+                      ) : (
                         <div className="alert alert-warning mb-0">
-                            Không có sản phẩm nào trong phiếu này
+                          Không có sản phẩm nào trong phiếu này
                         </div>
-                        )}
-
+                      )}
                     </div>
                     <div className="card-footer bg-light">
                       <div className="d-flex justify-content-end">
-                        <button className="btn btn-sm btn-outline-primary me-2">
-                          <i className="bi bi-eye me-1"></i> Xem chi tiết
+                        <button
+                          className="btn btn-sm btn-outline-danger me-2"
+                          onClick={() => handleReject(ticket.TicketID)}
+                        >
+                          <i className="bi bi-x-circle me-1"></i> Từ chối
                         </button>
-                        <button className="btn btn-sm btn-outline-success">
+                        <button
+                          className="btn btn-sm btn-outline-success"
+                          onClick={() => handleApprove(ticket.TicketID)}
+                        >
                           <i className="bi bi-check-circle me-1"></i> Duyệt
                         </button>
                       </div>

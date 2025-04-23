@@ -4,6 +4,9 @@ import { createConsign } from "../api/api";
 import NavbarUser from "./MenuUser";
 
 const CreateConsign = () => {
+    const brandOptions = ["Nike", "Adidas", "Gucci", "Puma"];
+    const typeOptions = ["Giày", "Túi xách", "Áo", "Quần"];
+
     const [productData, setProductData] = useState({
         Product_name: "",
         Sale_price: "",
@@ -52,7 +55,6 @@ const CreateConsign = () => {
 
         setAddedProducts([...addedProducts, newProduct]);
 
-        // Reset form và lỗi
         setProductData({
             Product_name: "",
             Sale_price: "",
@@ -104,27 +106,89 @@ const CreateConsign = () => {
 
                     <form onSubmit={handleSubmit}>
                         <div className="row">
-                            {[
-                                { label: "Tên Sản Phẩm", name: "Product_name", type: "text", placeholder: "Nhập tên sản phẩm" },
-                                { label: "Giá Bán", name: "Sale_price", type: "number", placeholder: "VD: 1500000" },
-                                { label: "Giá Gốc", name: "Original_price", type: "number", placeholder: "VD: 2000000" },
-                                { label: "Thương Hiệu", name: "Brand_name", type: "text", placeholder: "VD: Nike" },
-                                { label: "Loại Sản Phẩm", name: "Product_type_name", type: "text", placeholder: "VD: Giày" },
-                                { label: "Số Lượng", name: "Quantity", type: "number", placeholder: "VD: 2" },
-                                { label: "Giá Ký Gửi", name: "Price", type: "number", placeholder: "VD: 1200000" },
-                            ].map(({ label, name, type, placeholder }) => (
-                                <div className="mb-3 col-md-6" key={name}>
-                                    <label className="form-label fw-bold">{label}</label>
-                                    <input
-                                        type={type}
-                                        className="form-control"
-                                        name={name}
-                                        value={productData[name]}
-                                        onChange={handleChange}
-                                        placeholder={placeholder}
-                                    />
-                                </div>
-                            ))}
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Tên Sản Phẩm</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="Product_name"
+                                    value={productData.Product_name}
+                                    onChange={handleChange}
+                                    placeholder="Nhập tên sản phẩm"
+                                />
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Giá Bán</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    name="Sale_price"
+                                    value={productData.Sale_price}
+                                    onChange={handleChange}
+                                    placeholder="VD: 1500000"
+                                />
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Giá Gốc</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    name="Original_price"
+                                    value={productData.Original_price}
+                                    onChange={handleChange}
+                                    placeholder="VD: 2000000"
+                                />
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Thương Hiệu</label>
+                                <select
+                                    className="form-control"
+                                    name="Brand_name"
+                                    value={productData.Brand_name}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Chọn thương hiệu</option>
+                                    {brandOptions.map((brand) => (
+                                        <option key={brand} value={brand}>{brand}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Loại Sản Phẩm</label>
+                                <select
+                                    className="form-control"
+                                    name="Product_type_name"
+                                    value={productData.Product_type_name}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Chọn loại sản phẩm</option>
+                                    {typeOptions.map((type) => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Số Lượng</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    name="Quantity"
+                                    value={productData.Quantity}
+                                    onChange={handleChange}
+                                    placeholder="VD: 2"
+                                />
+                            </div>
+                            <div className="mb-3 col-md-6">
+                                <label className="form-label fw-bold">Giá Ký Gửi</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    name="Price"
+                                    value={productData.Price}
+                                    onChange={handleChange}
+                                    placeholder="VD: 1200000"
+                                />
+                            </div>
                         </div>
 
                         <div className="d-flex justify-content-between">

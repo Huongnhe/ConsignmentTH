@@ -13,7 +13,8 @@ const getAllTicketsWithProducts = async () => {
             p.Original_price,
             t.Status,
             b.Brand_name,
-            pt.Product_type_name  
+            pt.Product_type_name,
+            t.Create_date  -- Thêm ngày tạo vào đây
         FROM th_consignment_ticket_product_detail d
         JOIN th_consignment_ticket t ON t.ID = d.Ticket_id
         JOIN th_product p ON p.ID = d.Product_id 
@@ -39,6 +40,7 @@ const getAllTicketsWithProducts = async () => {
                 Status: row.Status,
                 User_name: row.User_name,
                 Email: row.Email,
+                Create_date: row.Create_date,
                 products: [] // Khởi tạo mảng sản phẩm cho mỗi ticket
             };
             result.push(ticketMap[ticketId]);
@@ -58,4 +60,25 @@ const getAllTicketsWithProducts = async () => {
     return result;
 };
 
-module.exports = { getAllTicketsWithProducts };
+const updateStatus = async (ticketID, newStatus) => {
+    const query = `
+        UPDATE th_consignment_ticket
+        SET Status = ?
+        WHERE ID = ?;
+    `;
+
+    try {
+        const [result] = await db.execute(query, [newStatus, ticketID]);
+
+        if (result.affectedRows > 0) {
+            return { success: true, message: 'Trạng thái phiếu ký gửi đã được cập nhật.' };
+        } else {
+            return { success: false, message: 'Không tìm thấy phiếu ký gửi với ID này.' };
+        }
+    } catch (error) {
+        console.error('Lỗi khi cập nhật trạng thái phiếu ký gửi:', error);
+        throw error;
+    }
+};
+
+module.exports = { getAllTicketsWithProducts,updateStatus };

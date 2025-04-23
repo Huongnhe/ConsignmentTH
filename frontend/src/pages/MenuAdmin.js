@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaSignOutAlt, FaTachometerAlt, FaBox, FaTags } from "react-icons/fa"; // Import icon cho giao diện đẹp hơn
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const SidebarMenu = () => {
     return (
@@ -16,33 +16,32 @@ const SidebarMenu = () => {
                 boxShadow: "4px 0 6px rgba(0, 0, 0, 0.1)",
             }}
         >
-            <h3 className="text-center mb-4 font-weight-bold">Admin Dashboard</h3>
+            <h3 className="text-center mb-4 fw-bold">Admin Dashboard</h3>
             <ul className="nav flex-column">
                 <li className="nav-item mb-3">
                     <Link to="/admin/consignments" className="nav-link text-white d-flex align-items-center">
-                        <FaBox className="mr-2" />
+                        <i className="bi bi-box me-2"></i>
                         Ký Gửi
                     </Link>
                 </li>
                 <li className="nav-item mb-3">
                     <Link to="/admin/orders" className="nav-link text-white d-flex align-items-center">
-                        <FaTachometerAlt className="mr-2" />
+                        <i className="bi bi-speedometer2 me-2"></i>
                         Đơn Hàng
                     </Link>
                 </li>
                 <li className="nav-item mb-3">
                     <Link to="/admin/categories" className="nav-link text-white d-flex align-items-center">
-                        <FaTags className="mr-2" />
+                        <i className="bi bi-tags me-2"></i>
                         Danh Mục
                     </Link>
                 </li>
                 <li className="nav-item mb-3">
                     <button
                         className="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center"
-                        style={{ color: "#fff" }}
                         onClick={() => window.location.href = "/login"}
                     >
-                        <FaSignOutAlt className="mr-2" />
+                        <i className="bi bi-box-arrow-right me-2"></i>
                         Đăng Xuất
                     </button>
                 </li>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getAllConsignmentTicketsAPI } from "../api/api";
+import { getAllConsignmentTicketsAPI, approveConsignmentTicketAPI, rejectConsignmentTicketAPI } from "../api/api";
 
 const AdminConsignmentContext = createContext();
 
@@ -25,37 +25,25 @@ export const AdminConsignmentProvider = ({ children }) => {
         return [];
       }
 
-      // Debug: Log toàn bộ dữ liệu nhận được
-      console.log("Dữ liệu thô từ API:", JSON.parse(JSON.stringify(data)));
-      
       const ticketsMap = new Map();
-      
+
       data.forEach(item => {
         try {
-          // Kiểm tra cấu trúc item cơ bản
-          if (!item || typeof item !== 'object') return;
-          
           const ticketId = item.TicketID || item.ticketID || item.id;
-          if (!ticketId) {
-            console.warn("Item không có TicketID:", item);
-            return;
-          }
-          
-          // Tạo hoặc lấy ticket hiện có
+          if (!ticketId) return;
+
           const ticket = ticketsMap.get(ticketId) || {
             TicketID: ticketId,
             User_name: item.User_name || item.username || 'Không xác định',
             Email: item.Email || item.email || '',
             Status: item.Status || item.status || 'pending',
+            Create_date: item.Create_date || '--/--/----',
             products: []
           };
-          
-          // Kiểm tra và thêm sản phẩm nếu có
+
           if (item.products && Array.isArray(item.products)) {
-            // Nếu products đã được nhóm sẵn
             ticket.products.push(...item.products.filter(p => p && p.Product_name));
           } else if (item.Product_name || item.productName) {
-            // Nếu item chính là sản phẩm
             ticket.products.push({
               Product_name: item.Product_name || item.productName,
               Quantity: item.Quantity || item.quantity || 0,
@@ -65,16 +53,14 @@ export const AdminConsignmentProvider = ({ children }) => {
               Product_type_name: item.Product_type_name || item.productType || ''
             });
           }
-          
+
           ticketsMap.set(ticketId, ticket);
         } catch (itemError) {
           console.error("Lỗi xử lý item:", itemError, "Item:", item);
         }
       });
-      
-      const result = Array.from(ticketsMap.values());
-      console.log("Dữ liệu sau chuẩn hóa:", result);
-      return result;
+
+      return Array.from(ticketsMap.values());
     } catch (error) {
       console.error("Lỗi chuẩn hóa dữ liệu:", error);
       return [];
@@ -89,38 +75,29 @@ export const AdminConsignmentProvider = ({ children }) => {
     }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
+
     try {
       const response = await getAllConsignmentTicketsAPI(token);
-      console.log("API Response (full):", response);
-      
-      // Xử lý nhiều định dạng response khác nhau
       let rawData = [];
+
       if (Array.isArray(response)) {
-        rawData = response; // Trường hợp API trả về trực tiếp mảng
+        rawData = response;
       } else if (Array.isArray(response?.data)) {
-        rawData = response.data; // Trường hợp có wrapper object
+        rawData = response.data;
       } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        rawData = response.data.data; // Trường hợp nested data
-      } else {
-        console.warn("Cấu trúc response không xác định:", response);
+        rawData = response.data.data;
       }
-      
+
       const normalizedData = normalizeData(rawData);
-      
+
       setState({
         consignments: normalizedData,
         loading: false,
         error: null,
         initialized: true
       });
-      
+
     } catch (error) {
-      console.error("Lỗi khi fetch data:", error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-      }
-      
       setState(prev => ({
         ...prev,
         error: handleError(error),
@@ -140,12 +117,95 @@ export const AdminConsignmentProvider = ({ children }) => {
     setState(prev => ({ ...prev, initialized: false }));
   }, []);
 
+  const approveConsignmentTicket = useCallback(async (ticketId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+      return;
+    }
+
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const response = await approveConsignmentTicketAPI(token, ticketId);
+
+      if (response?.data?.success) {
+        setState(prev => {
+          const updatedConsignments = prev.consignments.map(ticket => {
+            if (ticket.TicketID === ticketId) {
+              return { ...ticket, Status: 'Approved' };
+            }
+            return ticket;
+          });
+
+          return {
+            ...prev,
+            consignments: updatedConsignments,
+            loading: false,
+            error: null,
+          };
+        });
+      } else {
+        throw new Error(response?.data?.message || 'Lỗi khi duyệt đơn');
+      }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: handleError(error),
+        loading: false,
+      }));
+    }
+  }, [handleError]);
+
+  // Thêm hàm từ chối phiếu ký gửi
+  const rejectConsignmentTicket = useCallback(async (ticketId) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+      return;
+    }
+
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const response = await rejectConsignmentTicketAPI(token, ticketId);
+
+      if (response?.data?.success) {
+        setState(prev => {
+          const updatedConsignments = prev.consignments.map(ticket => {
+            if (ticket.TicketID === ticketId) {
+              return { ...ticket, Status: 'Rejected' };
+            }
+            return ticket;
+          });
+
+          return {
+            ...prev,
+            consignments: updatedConsignments,
+            loading: false,
+            error: null,
+          };
+        });
+      } else {
+        throw new Error(response?.data?.message || 'Lỗi khi từ chối đơn');
+      }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: handleError(error),
+        loading: false,
+      }));
+    }
+  }, [handleError]);
+
   return (
     <AdminConsignmentContext.Provider
       value={{
         ...state,
         fetchAllConsignmentTickets,
-        refreshData
+        refreshData,
+        approveConsignmentTicket,  
+        rejectConsignmentTicket,  // Thêm hàm từ chối vào context
       }}
     >
       {children}

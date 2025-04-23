@@ -100,4 +100,37 @@ export const getAllConsignmentTicketsAPI = async (token) => {
       throw error;
     }
   };
-  
+
+export const approveConsignmentTicketAPI = async (token, ticketID) => {
+try {
+    const response = await axios.put(
+        `${API_URL}/admin/approve/${ticketID}`,
+        {}, 
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    );
+    console.log("Dữ liệu trả về từ API khi duyệt phiếu ký gửi:", response.data);
+    return response.data;
+} catch (error) {
+    console.error("Lỗi khi duyệt phiếu ký gửi:", error.response?.data || error.message);
+    throw error;
+}
+};
+
+export const rejectConsignmentTicketAPI = async (token, ticketID) => {
+    try {
+        const response = await axios.put(
+            `${API_URL}/admin/reject/${ticketID}`,
+            {}, 
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
+        console.log("Dữ liệu trả về từ API khi từ chối phiếu ký gửi:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi khi duyệt phiếu ký gửi:", error.response?.data || error.message);
+        throw error;
+    }
+    };

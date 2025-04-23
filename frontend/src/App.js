@@ -1,69 +1,83 @@
 import React, { useState, useEffect, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import HomePageUser from "./pages/HomePageUser";
 import RegisterPage from "./pages/RegisterPage";
 import HomePageAdmin from "./pages/HomePageAdmin";
 import ConsignPage from "./pages/ConsignPage";
 import CreateConsign from "./pages/CreateConsign";
-import ConsignDetailPage from "./pages/ConsignDetailPage"; 
-import AdminConsign from "./pages/AdminConsign"; 
+import ConsignDetailPage from "./pages/ConsignDetailPage";
+import AdminConsign from "./pages/AdminConsign";
+import Footer from "./pages/Footer";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { ConsignProvider } from "./context/AuthConsign";
 import { AuthDetailProvider } from "./context/AuthDetail";
 import { AdminConsignmentProvider } from "./context/AuthAdminConsign";
 
-// PrivateRoute kiểm tra quyền truy cập
 const PrivateRoute = ({ element, account }) => {
   const { user } = useContext(AuthContext);
 
   if (!user) {
-    return <Navigate to="/login" />; // Nếu không có user, điều hướng tới login
+    return <Navigate to="/login" />;
   }
 
   if (account && user.Account !== account) {
-    return <Navigate to="/home" />; // Kiểm tra nếu tài khoản không khớp với yêu cầu, điều hướng tới trang home
+    return <Navigate to="/home" />;
   }
 
-  return element; // Nếu điều kiện đúng, hiển thị element
+  return element;
+};
+
+const AppContent = () => {
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  }, []);
+
+  const isAdminRoute = location.pathname.startsWith("/admin") && user?.Account === "Manager";
+
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} account="Manager" />} />
+        <Route path="/home" element={<HomePageUser />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/CreateConsign" element={<CreateConsign />} />
+        <Route
+          path="/consigns"
+          element={
+            loading ? (
+              <div>Loading...</div>
+            ) : (
+              <ConsignProvider>
+                <ConsignPage />
+              </ConsignProvider>
+            )
+          }
+        />
+        <Route path="/detailConsign/:id" element={<ConsignDetailPage />} />
+        <Route path="/admin/consignments" element={<PrivateRoute element={<AdminConsign />} account="Manager" />} />
+      </Routes>
+
+      {/* Chỉ hiển thị Footer nếu không phải trang admin */}
+      {!isAdminRoute && <Footer />}
+    </>
+  );
 };
 
 const App = () => {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Giả lập thời gian tải dữ liệu, có thể thay thế bằng API call
-    setTimeout(() => {
-      setLoading(false);
-    }, 500); // Tạm dừng 500ms để giả lập việc tải dữ liệu
-  }, []);
-
   return (
     <AuthProvider>
-      <AuthDetailProvider>  {/* Bao quanh tất cả các routes với AuthDetailProvider */}
-        <AdminConsignmentProvider> {/* Bao quanh các route liên quan đến AdminConsignmentProvider */}
+      <AuthDetailProvider>
+        <AdminConsignmentProvider>
           <Router>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} account="Manager" />} />
-              <Route path="/home" element={<HomePageUser />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/CreateConsign" element={<CreateConsign />} />
-              <Route
-                path="/consigns"
-                element={
-                  loading ? (
-                    <div>Loading...</div> // Hiển thị Loading khi hệ thống đang tải
-                  ) : (
-                    <ConsignProvider>
-                      <ConsignPage />
-                    </ConsignProvider>
-                  )
-                }
-              />
-              <Route path="/detailConsign/:id" element={<ConsignDetailPage />} />
-              <Route path="/admin/consignments" element={<PrivateRoute element={<AdminConsign />} account="Manager" />} />
-            </Routes>
+            <AppContent />
           </Router>
         </AdminConsignmentProvider>
       </AuthDetailProvider>
