@@ -46,6 +46,19 @@ const ConsignmentDetailPage = () => {
         });
     };
 
+    const getStatusColorClass = (status) => {
+        switch (status.toLowerCase()) {
+            case "pending":
+                return "badge bg-warning text-dark";  // Màu vàng
+            case "approved":
+                return "badge bg-success";  // Màu xanh lá
+            case "rejected":
+                return "badge bg-danger";  // Màu đỏ
+            default:
+                return "badge bg-secondary";  // Màu xám nếu không xác định
+        }
+    };
+
     if (loading) return <div className="text-center">Đang tải...</div>;
     if (error) return <div className="text-center text-danger">{error}</div>;
     if (!consignmentDetail) return <div className="text-center">Không có chi tiết đơn ký gửi</div>;
@@ -64,7 +77,12 @@ const ConsignmentDetailPage = () => {
                         <p><strong>Ngày tạo đơn:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
                         <p><strong>Tên khách hàng:</strong> {consignmentDetail.Customer_Name}</p>
                         <p><strong>Email khách hàng:</strong> {consignmentDetail.Customer_Email}</p>
-                        <p><strong>Tình trạng đơn:</strong> {consignmentDetail.Consignment_Status}</p>
+                        <p>
+                            <strong>Tình trạng đơn:</strong>{" "}
+                            <span className={getStatusColorClass(consignmentDetail.Consignment_Status)}>
+                                {consignmentDetail.Consignment_Status}
+                            </span>
+                        </p>
                     </div>
                 </div>
 

@@ -6,19 +6,34 @@ const { createConsignController } = require("../controllers/CreateConsignControl
 const { fetchConsignmentDetail } = require("../controllers/detailConsignController");
 const { updateConsignmentProduct } = require("../controllers/updateConsignmentProduct");
 const consignmentController = require("../controllers/deleteConsignController");
-const { fetchAllConsignmentTickets, approveConsignmentTicket, rejectConsignmentTicket } = require("../controllers/adminConsignController");
+
+//Controller cho admin
+const {
+    fetchAllConsignmentTickets,
+    fetchPendingConsignmentTickets,
+    fetchReviewedConsignmentTickets,
+    approveConsignmentTicket,
+    rejectConsignmentTicket
+} = require("../controllers/adminConsignController");
+
 const router = express.Router();
 
+// Đăng ký và đăng nhập
 router.post("/register", register);
 router.post("/login", login);
 
+// Người dùng
 router.post("/consigns", authenticateUser, fetchUserProducts);
 router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
 router.put("/updateConsign/:id", authenticateUser, updateConsignmentProduct);
 router.delete("/consignments/:consignmentId/products/:productId", authenticateUser, consignmentController.deleteProductInConsignment);
 
+//Admin
 router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
-router.put('/admin/approve/:ticketID', approveConsignmentTicket);
-router.put('/admin/reject/:ticketID', rejectConsignmentTicket); 
+router.post("/admin/consignments/pending", authenticateUser, fetchPendingConsignmentTickets);
+router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsignmentTickets);
+router.put("/admin/approve/:ticketID", approveConsignmentTicket);
+router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
+
 module.exports = router;

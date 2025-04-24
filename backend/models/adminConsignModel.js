@@ -1,39 +1,13 @@
 const db = require("../config/db");
 
-// Lấy tất cả phiếu ký gửi với thông tin sản phẩm
-const getAllTicketsWithProducts = async () => {
-    const query = `
-        SELECT 
-            t.ID as TicketID,
-            u.User_name,
-            u.Email,
-            d.Quantity,
-            p.Product_name,
-            p.Sale_price,
-            p.Original_price,
-            t.Status,
-            b.Brand_name,
-            pt.Product_type_name,
-            t.Create_date  -- Thêm ngày tạo vào đây
-        FROM th_consignment_ticket_product_detail d
-        JOIN th_consignment_ticket t ON t.ID = d.Ticket_id
-        JOIN th_product p ON p.ID = d.Product_id 
-        JOIN th_brand b ON p.Brand_id = b.ID
-        JOIN th_product_type pt ON p.Product_type_id = pt.ID
-        JOIN th_user u ON t.User_id = u.ID;
-    `;
-
-    // Thực hiện truy vấn và lấy kết quả
-    const [rows] = await db.execute(query);
-
-    // Nhóm theo TicketID
+// Hàm dùng chung để nhóm các sản phẩm theo từng Ticket
+const groupTickets = (rows) => {
     const result = [];
     const ticketMap = {};
 
     rows.forEach(row => {
         const ticketId = row.TicketID;
 
-        // Nếu chưa có ticketID này trong ticketMap, thêm nó vào
         if (!ticketMap[ticketId]) {
             ticketMap[ticketId] = {
                 TicketID: row.TicketID,
@@ -41,12 +15,11 @@ const getAllTicketsWithProducts = async () => {
                 User_name: row.User_name,
                 Email: row.Email,
                 Create_date: row.Create_date,
-                products: [] // Khởi tạo mảng sản phẩm cho mỗi ticket
+                products: []
             };
             result.push(ticketMap[ticketId]);
         }
 
-        // Thêm sản phẩm vào ticket tương ứng
         ticketMap[ticketId].products.push({
             Product_name: row.Product_name,
             Quantity: row.Quantity,
@@ -60,13 +33,96 @@ const getAllTicketsWithProducts = async () => {
     return result;
 };
 
+// Lấy tất cả phiếu ký gửi
+const getAllTicketsWithProducts = async () => {
+    const query = `
+        SELECT 
+            t.ID as TicketID,
+            u.User_name,
+            u.Email,
+            d.Quantity,
+            p.Product_name,
+            p.Sale_price,
+            p.Original_price,
+            t.Status,
+            b.Brand_name,
+            pt.Product_type_name,
+            t.Create_date
+        FROM th_consignment_ticket_product_detail d
+        JOIN th_consignment_ticket t ON t.ID = d.Ticket_id
+        JOIN th_product p ON p.ID = d.Product_id 
+        JOIN th_brand b ON p.Brand_id = b.ID
+        JOIN th_product_type pt ON p.Product_type_id = pt.ID
+        JOIN th_user u ON t.User_id = u.ID
+        ORDER BY t.ID ASC;
+    `;
+    const [rows] = await db.execute(query);
+    return groupTickets(rows);
+};
+
+// Lấy phiếu ký gửi có trạng thái Pending
+const getPendingTickets = async () => {
+    const query = `
+        SELECT 
+            t.ID as TicketID,
+            u.User_name,
+            u.Email,
+            d.Quantity,
+            p.Product_name,
+            p.Sale_price,
+            p.Original_price,
+            t.Status,
+            b.Brand_name,
+            pt.Product_type_name,
+            t.Create_date
+        FROM th_consignment_ticket_product_detail d
+        JOIN th_consignment_ticket t ON t.ID = d.Ticket_id
+        JOIN th_product p ON p.ID = d.Product_id 
+        JOIN th_brand b ON p.Brand_id = b.ID
+        JOIN th_product_type pt ON p.Product_type_id = pt.ID
+        JOIN th_user u ON t.User_id = u.ID
+        WHERE t.Status = 'Pending'
+        ORDER BY t.ID ASC;
+    `;
+    const [rows] = await db.execute(query);
+    return groupTickets(rows);
+};
+
+// Lấy phiếu đã duyệt (Approved hoặc Rejected)
+const getReviewedTickets = async () => {
+    const query = `
+        SELECT 
+            t.ID as TicketID,
+            u.User_name,
+            u.Email,
+            d.Quantity,
+            p.Product_name,
+            p.Sale_price,
+            p.Original_price,
+            t.Status,
+            b.Brand_name,
+            pt.Product_type_name,
+            t.Create_date
+        FROM th_consignment_ticket_product_detail d
+        JOIN th_consignment_ticket t ON t.ID = d.Ticket_id
+        JOIN th_product p ON p.ID = d.Product_id 
+        JOIN th_brand b ON p.Brand_id = b.ID
+        JOIN th_product_type pt ON p.Product_type_id = pt.ID
+        JOIN th_user u ON t.User_id = u.ID
+        WHERE t.Status IN ('Approved', 'Rejected')
+        ORDER BY t.ID ASC;
+    `;
+    const [rows] = await db.execute(query);
+    return groupTickets(rows);
+};
+
+// Cập nhật trạng thái phiếu ký gửi
 const updateStatus = async (ticketID, newStatus) => {
     const query = `
         UPDATE th_consignment_ticket
         SET Status = ?
         WHERE ID = ?;
     `;
-
     try {
         const [result] = await db.execute(query, [newStatus, ticketID]);
 
@@ -81,4 +137,9 @@ const updateStatus = async (ticketID, newStatus) => {
     }
 };
 
-module.exports = { getAllTicketsWithProducts,updateStatus };
+module.exports = {
+    getAllTicketsWithProducts,
+    getPendingTickets,
+    getReviewedTickets,
+    updateStatus
+};

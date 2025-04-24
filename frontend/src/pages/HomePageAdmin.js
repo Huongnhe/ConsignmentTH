@@ -21,7 +21,7 @@ const HomePageAdmin = () => {
             <div
                 className="container mt-5"
                 style={{
-                    marginLeft: "250px",  // Điều chỉnh margin để nội dung không bị đè lên menu
+                    marginLeft: "250px",
                     flex: 1,
                     padding: "20px",
                 }}

@@ -54,8 +54,11 @@ const ConsignmentPage = () => {
                                 <h5>
                                     <span className="badge bg-secondary">Mã đơn: {ticket.TicketID}</span> &nbsp;
                                     <span
-                                        className={`badge ${ticket.Status === "Consigned" ? "bg-info" :
-                                            ticket.Status === "Received" ? "bg-warning" : "bg-success"}`}
+                                        className={`badge ${
+                                            ticket.Status === "Approved" ? "bg-success" :  // Màu xanh lá cho "Approved"
+                                            ticket.Status === "Rejected" ? "bg-danger" :  // Màu đỏ cho "Rejected"
+                                            "bg-warning"  // Màu vàng cho "Pending"
+                                        }`}
                                     >
                                         {ticket.Status}
                                     </span>

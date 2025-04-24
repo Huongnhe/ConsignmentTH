@@ -1,41 +1,73 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAdminConsignment } from "../context/AuthAdminConsign";
-import SidebarMenu from "../pages/MenuAdmin";
+import SidebarMenu from "./MenuAdmin";
 
 const AdminConsign = () => {
   const {
-    consignments,
-    fetchAllConsignmentTickets,
+    pendingConsignments,
+    reviewedConsignments,
+    fetchPendingConsignments,
+    fetchReviewedConsignments,
     loading,
     error,
     refreshData,
     approveConsignmentTicket,
-    rejectConsignmentTicket 
+    rejectConsignmentTicket,
   } = useAdminConsignment();
 
+  const [currentTab, setCurrentTab] = useState("pending");
+  const [message, setMessage] = useState(null);
+
   useEffect(() => {
-    fetchAllConsignmentTickets();
-  }, []);
+    if (currentTab === "pending") {
+      fetchPendingConsignments();
+    } else {
+      fetchReviewedConsignments();
+    }
+  }, [currentTab, fetchPendingConsignments, fetchReviewedConsignments]);
 
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
-      case 'đã duyệt': return 'success';
-      case 'từ chối': return 'danger';
-      case 'đang chờ': return 'warning';
-      default: return 'secondary';
+      case "approved":
+      case "đã duyệt":
+        return "success";
+      case "rejected":
+      case "từ chối":
+        return "danger";
+      case "pending":
+      case "đang chờ":
+        return "warning";
+      default:
+        return "secondary";
     }
   };
 
   const handleApprove = (ticketID) => {
-    // Gọi API hoặc cập nhật trạng thái phiếu ký gửi thành 'approve'
-    approveConsignmentTicket(ticketID, 'approved');
-    refreshData();  // Refresh lại dữ liệu sau khi cập nhật trạng thái
+    const confirmed = window.confirm("Bạn có chắc chắn muốn *duyệt* phiếu ký gửi này?");
+    if (!confirmed) return;
+
+    approveConsignmentTicket(ticketID).then(() => {
+      setMessage("Phiếu đã được duyệt thành công.");
+      if (currentTab === "pending") {
+        fetchPendingConsignments();
+      } else {
+        fetchReviewedConsignments();
+      }
+    });
   };
 
   const handleReject = (ticketID) => {
-    // Gọi API hoặc cập nhật trạng thái phiếu ký gửi thành 'từ chối'
-    rejectConsignmentTicket (ticketID, 'rejected');
-    refreshData();  // Refresh lại dữ liệu sau khi cập nhật trạng thái
+    const confirmed = window.confirm("Bạn có chắc chắn muốn *từ chối* phiếu ký gửi này?");
+    if (!confirmed) return;
+
+    rejectConsignmentTicket(ticketID).then(() => {
+      setMessage("Phiếu đã bị từ chối.");
+      if (currentTab === "pending") {
+        fetchPendingConsignments();
+      } else {
+        fetchReviewedConsignments();
+      }
+    });
   };
 
   return (
@@ -50,18 +82,36 @@ const AdminConsign = () => {
         <div className="col-md-9 col-lg-10 py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2 className="mb-0">Danh sách phiếu ký gửi</h2>
-            <button
-              onClick={refreshData}
-              className="btn btn-primary"
-              disabled={loading}
-            >
+            <button onClick={refreshData} className="btn btn-primary" disabled={loading}>
               <i className="bi bi-arrow-clockwise me-1"></i>
               Làm mới
             </button>
           </div>
 
+          <div className="d-flex mb-4">
+            <button
+              className={`btn btn-outline-primary me-2 ${currentTab === "pending" ? "active" : ""}`}
+              onClick={() => setCurrentTab("pending")}
+            >
+              Phiếu Chờ Duyệt
+            </button>
+            <button
+              className={`btn btn-outline-primary ${currentTab === "reviewed" ? "active" : ""}`}
+              onClick={() => setCurrentTab("reviewed")}
+            >
+              Phiếu Đã Duyệt/Từ Chối
+            </button>
+          </div>
+
+          {message && (
+            <div className="alert alert-success alert-dismissible fade show" role="alert">
+              {message}
+              <button type="button" className="btn-close" onClick={() => setMessage(null)}></button>
+            </div>
+          )}
+
           {loading ? (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: '300px' }}>
+            <div className="d-flex justify-content-center align-items-center" style={{ height: "300px" }}>
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
@@ -70,20 +120,17 @@ const AdminConsign = () => {
           ) : error ? (
             <div className="alert alert-danger m-3">
               <strong>Lỗi:</strong> {error}
-              <button
-                onClick={refreshData}
-                className="btn btn-sm btn-outline-danger ms-2"
-              >
+              <button onClick={refreshData} className="btn btn-sm btn-outline-danger ms-2">
                 Thử lại
               </button>
             </div>
-          ) : consignments.length === 0 ? (
+          ) : (currentTab === "pending" ? pendingConsignments : reviewedConsignments).length === 0 ? (
             <div className="alert alert-info">
               Không có phiếu ký gửi nào
             </div>
           ) : (
             <div className="row g-4">
-              {consignments.map((ticket) => (
+              {(currentTab === "pending" ? pendingConsignments : reviewedConsignments).map((ticket) => (
                 <div key={ticket.TicketID} className="col-12">
                   <div className="card shadow-sm">
                     <div className="card-header bg-light">
@@ -101,8 +148,8 @@ const AdminConsign = () => {
                           <p><strong>Email:</strong> {ticket.Email}</p>
                         </div>
                         <div className="col-md-6">
-                          <p><strong>Ngày tạo:</strong> {ticket.Create_date || '--/--/----'}</p>
-                          <p><strong>Ghi chú:</strong> {ticket.Note || 'Không có'}</p>
+                          <p><strong>Ngày tạo:</strong> {ticket.Create_date || "--/--/----"}</p>
+                          <p><strong>Ghi chú:</strong> {ticket.Note || "Không có"}</p>
                         </div>
                       </div>
 
@@ -128,8 +175,8 @@ const AdminConsign = () => {
                                   <td>{product.Quantity}</td>
                                   <td>{Number(product.Original_price).toLocaleString()}đ</td>
                                   <td>{Number(product.Sale_price).toLocaleString()}đ</td>
-                                  <td>{product.Brand_name || '-'}</td>
-                                  <td>{product.Product_type_name || '-'}</td>
+                                  <td>{product.Brand_name || "-"}</td>
+                                  <td>{product.Product_type_name || "-"}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -143,18 +190,27 @@ const AdminConsign = () => {
                     </div>
                     <div className="card-footer bg-light">
                       <div className="d-flex justify-content-end">
-                        <button
-                          className="btn btn-sm btn-outline-danger me-2"
-                          onClick={() => handleReject(ticket.TicketID)}
-                        >
-                          <i className="bi bi-x-circle me-1"></i> Từ chối
-                        </button>
-                        <button
-                          className="btn btn-sm btn-outline-success"
-                          onClick={() => handleApprove(ticket.TicketID)}
-                        >
-                          <i className="bi bi-check-circle me-1"></i> Duyệt
-                        </button>
+                        {/* Nút từ chối - hiển thị trong mọi trường hợp trừ khi đã rejected */}
+                        {(!ticket.Status.includes("Từ chối") && !(ticket.Status === "Rejected")) && (
+                          <button
+                            className="btn btn-sm btn-outline-danger me-2"
+                            onClick={() => handleReject(ticket.TicketID)}
+                          >
+                            <i className="bi bi-x-circle me-1"></i>
+                            Từ chối
+                          </button>
+                        )}
+
+                        {/* Nút duyệt - hiển thị trong mọi trường hợp trừ khi đã approved */}
+                        {(!ticket.Status.includes("Đã duyệt") && !(ticket.Status === "Approved")) && (
+                          <button
+                            className="btn btn-sm btn-outline-success"
+                            onClick={() => handleApprove(ticket.TicketID)}
+                          >
+                            <i className="bi bi-check-circle me-1"></i>
+                            Duyệt
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

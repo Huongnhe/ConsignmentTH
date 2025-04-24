@@ -27,7 +27,8 @@ const getConsignmentDetail = async (consignmentId) => {
         JOIN TH_Product p ON p.ID = d.Product_id
         JOIN TH_Brand b ON p.Brand_id = b.ID
         JOIN TH_Product_Type pt ON p.Product_type_id = pt.ID
-        WHERE c.ID = ?;
+        WHERE c.ID = ?
+        ORDER BY p.ID ASC;
     `;
 
     const [rows] = await db.execute(query, [consignmentId]);

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getAllConsignmentTicketsAPI, approveConsignmentTicketAPI, rejectConsignmentTicketAPI } from "../api/api";
+import { getAllConsignmentTicketsAPI, getPendingConsignmentsAPI, getReviewedConsignmentsAPI, approveConsignmentTicketAPI, rejectConsignmentTicketAPI } from "../api/api";
 
 const AdminConsignmentContext = createContext();
 
 export const AdminConsignmentProvider = ({ children }) => {
   const [state, setState] = useState({
-    consignments: [],
+    pendingConsignments: [],
+    reviewedConsignments: [],
     loading: false,
     error: null,
     initialized: false
@@ -36,7 +37,7 @@ export const AdminConsignmentProvider = ({ children }) => {
             TicketID: ticketId,
             User_name: item.User_name || item.username || 'Không xác định',
             Email: item.Email || item.email || '',
-            Status: item.Status || item.status || 'pending',
+            Status: item.Status || item.status || 'Pending',
             Create_date: item.Create_date || '--/--/----',
             products: []
           };
@@ -67,7 +68,7 @@ export const AdminConsignmentProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchAllConsignmentTickets = useCallback(async () => {
+  const fetchPendingConsignments = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
@@ -77,25 +78,49 @@ export const AdminConsignmentProvider = ({ children }) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const response = await getAllConsignmentTicketsAPI(token);
-      let rawData = [];
-
-      if (Array.isArray(response)) {
-        rawData = response;
-      } else if (Array.isArray(response?.data)) {
-        rawData = response.data;
-      } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        rawData = response.data.data;
-      }
-
+      const response = await getPendingConsignmentsAPI(token);
+      let rawData = response?.data || [];
       const normalizedData = normalizeData(rawData);
 
-      setState({
-        consignments: normalizedData,
+      setState(prev => ({
+        ...prev,
+        pendingConsignments: normalizedData,
         loading: false,
         error: null,
         initialized: true
-      });
+      }));
+
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: handleError(error),
+        loading: false,
+        initialized: true
+      }));
+    }
+  }, [handleError, normalizeData]);
+
+  const fetchReviewedConsignments = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+      return;
+    }
+
+    setState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      const response = await getReviewedConsignmentsAPI(token);
+      let rawData = response?.data || [];
+      const normalizedData = normalizeData(rawData);
+
+      setState(prev => ({
+        ...prev,
+        reviewedConsignments: normalizedData,
+        loading: false,
+        error: null,
+        initialized: true
+      }));
 
     } catch (error) {
       setState(prev => ({
@@ -109,103 +134,135 @@ export const AdminConsignmentProvider = ({ children }) => {
 
   useEffect(() => {
     if (!state.initialized) {
-      fetchAllConsignmentTickets();
+      fetchPendingConsignments();
+      fetchReviewedConsignments();
     }
-  }, [state.initialized, fetchAllConsignmentTickets]);
+  }, [state.initialized, fetchPendingConsignments, fetchReviewedConsignments]);
 
   const refreshData = useCallback(() => {
     setState(prev => ({ ...prev, initialized: false }));
   }, []);
 
+
   const approveConsignmentTicket = useCallback(async (ticketId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
-      return;
-    }
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+    return;
+  }
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  setState(prev => ({ ...prev, loading: true, error: null }));
 
-    try {
-      const response = await approveConsignmentTicketAPI(token, ticketId);
+  try {
+    const response = await approveConsignmentTicketAPI(token, ticketId);
 
-      if (response?.data?.success) {
-        setState(prev => {
-          const updatedConsignments = prev.consignments.map(ticket => {
-            if (ticket.TicketID === ticketId) {
-              return { ...ticket, Status: 'Approved' };
-            }
-            return ticket;
-          });
-
+    if (response?.data?.success) {
+      setState(prev => {
+        // Lọc bỏ ticket đã được duyệt khỏi danh sách pending
+        const updatedPending = prev.pendingConsignments.filter(ticket => ticket.TicketID !== ticketId);
+        
+        // Thêm ticket đã duyệt vào danh sách reviewed
+        const approvedTicket = prev.pendingConsignments.find(ticket => ticket.TicketID === ticketId);
+        if (approvedTicket) {
+          approvedTicket.Status = 'Approved';
           return {
             ...prev,
-            consignments: updatedConsignments,
+            pendingConsignments: updatedPending,
+            reviewedConsignments: [...prev.reviewedConsignments, approvedTicket],
             loading: false,
-            error: null,
+            error: null
           };
-        });
-      } else {
-        throw new Error(response?.data?.message || 'Lỗi khi duyệt đơn');
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: handleError(error),
-        loading: false,
-      }));
+        }
+        
+        return {
+          ...prev,
+          pendingConsignments: updatedPending,
+          loading: false,
+          error: null
+        };
+      });
+      
+      // Tự động refresh danh sách sau 1 giây
+      setTimeout(() => {
+        fetchPendingConsignments();
+        fetchReviewedConsignments();
+      }, 1000);
+    } else {
+      throw new Error(response?.data?.message || 'Lỗi khi duyệt đơn');
     }
-  }, [handleError]);
+  } catch (error) {
+    setState(prev => ({
+      ...prev,
+      error: handleError(error),
+      loading: false,
+    }));
+  }
+}, [handleError, fetchPendingConsignments, fetchReviewedConsignments]);
 
-  // Thêm hàm từ chối phiếu ký gửi
-  const rejectConsignmentTicket = useCallback(async (ticketId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
-      return;
-    }
+const rejectConsignmentTicket = useCallback(async (ticketId) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+    return;
+  }
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  setState(prev => ({ ...prev, loading: true, error: null }));
 
-    try {
-      const response = await rejectConsignmentTicketAPI(token, ticketId);
+  try {
+    const response = await rejectConsignmentTicketAPI(token, ticketId);
 
-      if (response?.data?.success) {
-        setState(prev => {
-          const updatedConsignments = prev.consignments.map(ticket => {
-            if (ticket.TicketID === ticketId) {
-              return { ...ticket, Status: 'Rejected' };
-            }
-            return ticket;
-          });
-
+    if (response?.data?.success) {
+      setState(prev => {
+        // Lọc bỏ ticket đã từ chối khỏi danh sách pending
+        const updatedPending = prev.pendingConsignments.filter(ticket => ticket.TicketID !== ticketId);
+        
+        // Thêm ticket đã từ chối vào danh sách reviewed
+        const rejectedTicket = prev.pendingConsignments.find(ticket => ticket.TicketID === ticketId);
+        if (rejectedTicket) {
+          rejectedTicket.Status = 'Rejected';
           return {
             ...prev,
-            consignments: updatedConsignments,
+            pendingConsignments: updatedPending,
+            reviewedConsignments: [...prev.reviewedConsignments, rejectedTicket],
             loading: false,
-            error: null,
+            error: null
           };
-        });
-      } else {
-        throw new Error(response?.data?.message || 'Lỗi khi từ chối đơn');
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: handleError(error),
-        loading: false,
-      }));
+        }
+        
+        return {
+          ...prev,
+          pendingConsignments: updatedPending,
+          loading: false,
+          error: null
+        };
+      });
+      
+      // Tự động refresh danh sách sau 1 giây
+      setTimeout(() => {
+        fetchPendingConsignments();
+        fetchReviewedConsignments();
+      }, 1000);
+    } else {
+      throw new Error(response?.data?.message || 'Lỗi khi từ chối đơn');
     }
-  }, [handleError]);
+  } catch (error) {
+    setState(prev => ({
+      ...prev,
+      error: handleError(error),
+      loading: false,
+    }));
+  }
+}, [handleError, fetchPendingConsignments, fetchReviewedConsignments]);
 
   return (
     <AdminConsignmentContext.Provider
       value={{
         ...state,
-        fetchAllConsignmentTickets,
+        fetchPendingConsignments,
+        fetchReviewedConsignments,
         refreshData,
         approveConsignmentTicket,  
-        rejectConsignmentTicket,  // Thêm hàm từ chối vào context
+        rejectConsignmentTicket,  
       }}
     >
       {children}
