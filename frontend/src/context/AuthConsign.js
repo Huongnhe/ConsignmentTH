@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
-import { getUserProducts, createConsign } from "../api/api";
+import { getUserProducts, createConsign, deleteProductInConsignmentAPI  } from "../api/api";
 import { AuthContext } from "./AuthContext";
 
 export const ConsignContext = createContext();
@@ -62,8 +62,34 @@ export const ConsignProvider = ({ children }) => {
             setLoading(false);
         }
     };
+
+    const deleteProductInConsignment = async (consignmentId, productId) => {
+        const token = user?.token;
+        if (!token) {
+            setError("Người dùng chưa đăng nhập.");
+            return;
+        }
+    
+        setLoading(true);
+        setError(null);
+        try {
+            // Gọi API xóa sản phẩm trong đơn ký gửi
+            const result = await deleteProductInConsignmentAPI(token, consignmentId, productId);
+            console.log("Kết quả xóa sản phẩm:", result);
+    
+            // Sau khi xóa thành công, fetch lại danh sách sản phẩm trong đơn
+            await fetchUserProducts();
+        } catch (error) {
+            console.error("Lỗi khi xóa sản phẩm:", error);
+            setError("Không thể xóa sản phẩm.");
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+
     return (
-        <ConsignContext.Provider value={{ products, loading, error, fetchUserProducts, createConsign }}>
+        <ConsignContext.Provider value={{ products, loading, error, fetchUserProducts, createConsign, deleteProductInConsignment }}>
             {children}
         </ConsignContext.Provider>
     );

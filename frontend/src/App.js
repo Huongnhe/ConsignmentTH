@@ -61,11 +61,17 @@ const AppContent = () => {
             )
           }
         />
-        <Route path="/detailConsign/:id" element={<ConsignDetailPage />} />
+        <Route
+          path="/detailConsign/:id"
+          element={
+            <ConsignProvider>
+              <ConsignDetailPage />
+            </ConsignProvider>
+          }
+        />
         <Route path="/admin/consignments" element={<PrivateRoute element={<AdminConsign />} account="Manager" />} />
       </Routes>
 
-      {/* Chỉ hiển thị Footer nếu không phải trang admin */}
       {!isAdminRoute && <Footer />}
     </>
   );

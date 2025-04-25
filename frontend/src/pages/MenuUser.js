@@ -44,7 +44,7 @@ const NavbarUser = () => {
             color: "#ffffff",
             fontSize: "1.2rem",
             textTransform: "uppercase"
-          }}>TH CONSIGNMENT</span>
+          }}>TH WORLD</span>
         </Link>
 
         <button

@@ -1,114 +1,85 @@
 const db = require("../config/db");
 
 const deleteProductFromConsignment = async (consignmentId, productId) => {
-
-    const connection = await db.getConnection();
-
-    try {
-        await connection.beginTransaction();
-
-        // Xóa chi tiết sản phẩm trong phiếu ký gửi
-        const deleteConsignmentDetailQuery = `
-            DELETE FROM TH_Consignment_Ticket_Product_Detail
-            WHERE Ticket_id = ? AND Product_id = ?
-        `;
-        await connection.execute(deleteConsignmentDetailQuery, [consignmentId, productId]);
-
-        // Nếu phiếu ký gửi không còn sản phẩm nào thì xóa luôn phiếu ký gửi
-        const [remaining] = await connection.execute(
-            `SELECT COUNT(*) as count FROM TH_Consignment_Ticket_Product_Detail WHERE Ticket_id = ?`,
-            [consignmentId]
-        );
-
-        if (remaining[0].count === 0) {
-            const deleteConsignmentQuery = `
-                DELETE FROM TH_Consignment_Ticket
-                WHERE ID = ?
-            `;
-            await connection.execute(deleteConsignmentQuery, [consignmentId]);
-        }
-
-        // Xóa chi tiết sản phẩm trong đơn hàng
-        const deleteOrderDetailQuery = `
-            DELETE FROM TH_Order_Detail
-            WHERE Product_id = ?
-        `;
-        await connection.execute(deleteOrderDetailQuery, [productId]);
-
-        // Xóa sản phẩm nếu không còn tồn tại trong phiếu hay đơn hàng
-        const deleteProductQuery = `
-            DELETE FROM TH_Product
-            WHERE ID = ?
-            AND NOT EXISTS (
-                SELECT 1 FROM TH_Consignment_Ticket_Product_Detail WHERE Product_id = ?
-            )
-            AND NOT EXISTS (
-                SELECT 1 FROM TH_Order_Detail WHERE Product_id = ?
-            )
-        `;
-        await connection.execute(deleteProductQuery, [productId, productId, productId]);
-
-        await connection.commit();
-        return true;
-
-    } catch (error) {
-        await connection.rollback();
-        console.error("Error deleting product:", error);
-        return false;
-    } finally {
-        connection.release();
-
     let connection;
     try {
-        // Bắt đầu transaction
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. Xóa từ bảng chi tiết sản phẩm trong đơn
-        const deleteDetailQuery = `
-            DELETE FROM TH_Consignment_Ticket_Product_Detail
-            WHERE Ticket_id = ? AND Product_id = ?
-        `;
-        await connection.execute(deleteDetailQuery, [consignmentId, productId]);
+        // 1. Xóa sản phẩm khỏi bảng chi tiết của đơn ký gửi
+        await connection.execute(
+            `DELETE FROM TH_Consignment_Ticket_Product_Detail 
+             WHERE Ticket_id = ? AND Product_id = ?`,
+            [consignmentId, productId]
+        );
 
-        // 2. Kiểm tra nếu đơn hàng không còn sản phẩm nào thì xóa luôn đơn hàng
-        const checkTicketQuery = `
-            SELECT COUNT(*) AS productCount 
-            FROM TH_Consignment_Ticket_Product_Detail
-            WHERE Ticket_id = ?
-        `;
-        const [ticketResults] = await connection.execute(checkTicketQuery, [consignmentId]);
-        
-        if (ticketResults[0].productCount === 0) {
-            const deleteTicketQuery = `
-                DELETE FROM TH_Consignment_Ticket
-                WHERE ID = ?
-            `;
-            await connection.execute(deleteTicketQuery, [consignmentId]);
+        // 2. Xóa sản phẩm khỏi bảng chi tiết đơn hàng nếu có
+        await connection.execute(
+            `DELETE FROM TH_Order_Detail 
+             WHERE Product_id = ?`,
+            [productId]
+        );
+
+        // 3. Kiểm tra xem còn bao nhiêu sản phẩm trong đơn ký gửi này
+        const [ticketProducts] = await connection.execute(
+            `SELECT COUNT(*) AS count 
+             FROM TH_Consignment_Ticket_Product_Detail 
+             WHERE Ticket_id = ?`,
+            [consignmentId]
+        );
+
+        // 4. Nếu chỉ còn 1 sản phẩm cuối, thông báo trước khi xóa
+        let productDeleted = false;
+        let ticketDeleted = false;
+
+        if (ticketProducts[0].count < 0 ) {
+            // Nếu chỉ còn 1 sản phẩm trong ticket, thông báo rằng ticket sẽ bị xóa
+            throw new Error("Việc xóa sản phẩm này sẽ khiến đơn ký gửi của bạn bị xóa.");
         }
 
-        // 3. Xóa sản phẩm từ bảng sản phẩm chính
-        const deleteProductQuery = `
-            DELETE FROM TH_Product
-            WHERE ID = ?
-        `;
-        await connection.execute(deleteProductQuery, [productId]);
+        // 5. Kiểm tra sản phẩm có còn tồn tại trong bất kỳ ticket nào khác
+        const [productInTickets] = await connection.execute(
+            `SELECT COUNT(*) AS count 
+             FROM TH_Consignment_Ticket_Product_Detail 
+             WHERE Product_id = ?`,
+            [productId]
+        );
 
-        // Commit transaction nếu mọi thứ thành công
+        // 6. Nếu sản phẩm không còn trong bất kỳ ticket nào, xóa sản phẩm khỏi bảng TH_Product
+        if (productInTickets[0].count === 0) {
+            await connection.execute(
+                `DELETE FROM TH_Product WHERE ID = ?`,
+                [productId]
+            );
+            productDeleted = true;
+        }
+
+        // 7. Nếu không còn sản phẩm nào trong ticket, xóa ticket
+        if (ticketProducts[0].count === 0) {
+            await connection.execute(
+                `DELETE FROM TH_Consignment_Ticket WHERE ID = ?`,
+                [consignmentId]
+            );
+            ticketDeleted = true;
+        }
+
+        // Commit transaction
         await connection.commit();
-        return true;
-    } catch (error) {
-        // Rollback nếu có lỗi xảy ra
-        if (connection) await connection.rollback();
-        console.error("Error deleting product from consignment:", error);
-        throw error;
-    } finally {
-        if (connection) connection.release();
 
+        return {
+            success: true,
+            ticketDeleted,
+            productDeleted
+        };
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Error deleting product from consignment:", error.message);
+        throw error;  // Throw error to be caught in controller
+    } finally {
+        if (connection) connection.release();  // Ensure release of connection
     }
 };
 
 module.exports = {
     deleteProductFromConsignment
 };
-

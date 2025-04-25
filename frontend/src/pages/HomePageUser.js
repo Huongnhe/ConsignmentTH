@@ -63,7 +63,7 @@ const HomePage = () => {
               color: "#5A4A3A",
               letterSpacing: "1px",
               marginBottom: "1.5rem"
-            }}>TH CONSIGNMENT</h1>
+            }}>TH WORLD</h1>
 
             <p style={{
               color: "#8A7B6D",

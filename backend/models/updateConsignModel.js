@@ -1,4 +1,4 @@
-const db = require("../config/db"); // Kết nối mysql2/promise
+const db = require("../config/db");
 
 const updateConsignment = async (productId, productData) => {
     const {

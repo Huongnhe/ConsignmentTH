@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthDetail } from "../context/AuthDetail";
+import { ConsignContext } from "../context/AuthConsign"; // ✅ THÊM
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser";
 
@@ -11,6 +12,7 @@ const ConsignmentDetailPage = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
     const navigate = useNavigate();
+    const { deleteProductInConsignment } = useContext(ConsignContext); // ✅ THÊM
 
     useEffect(() => {
         if (id !== prevIdRef.current) {
@@ -37,6 +39,21 @@ const ConsignmentDetailPage = () => {
         navigate("/consignment");
     };
 
+    // ✅ THÊM: Hàm xử lý xóa sản phẩm khỏi đơn
+    const handleDeleteProduct = async (productId) => {
+        if (!consignmentDetail?.Consignment_ID || !productId) return;
+        const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn?");
+        if (!confirmDelete) return;
+
+        try {
+            await deleteProductInConsignment(consignmentDetail.Consignment_ID, productId);
+            await fetchConsignmentDetail(id); // cập nhật lại UI
+        } catch (err) {
+            console.error("Lỗi khi xóa sản phẩm:", err);
+            alert("Không thể xóa sản phẩm khỏi đơn.");
+        }
+    };
+
     const handleProductChange = (index, field, value) => {
         const updatedProducts = [...updatedConsignmentDetail.Products];
         updatedProducts[index][field] = value;
@@ -49,13 +66,13 @@ const ConsignmentDetailPage = () => {
     const getStatusColorClass = (status) => {
         switch (status.toLowerCase()) {
             case "pending":
-                return "badge bg-warning text-dark";  // Màu vàng
+                return "badge bg-warning text-dark";
             case "approved":
-                return "badge bg-success";  // Màu xanh lá
+                return "badge bg-success";
             case "rejected":
-                return "badge bg-danger";  // Màu đỏ
+                return "badge bg-danger";
             default:
-                return "badge bg-secondary";  // Màu xám nếu không xác định
+                return "badge bg-secondary";
         }
     };
 
@@ -69,7 +86,6 @@ const ConsignmentDetailPage = () => {
             <div className="container mt-5">
                 <h2 className="text-center text-primary">Chi Tiết Đơn Ký Gửi</h2>
 
-                {/* Thông tin chung về đơn */}
                 <div className="card mb-4">
                     <div className="card-body">
                         <h4>Thông tin đơn ký gửi</h4>
@@ -86,7 +102,6 @@ const ConsignmentDetailPage = () => {
                     </div>
                 </div>
 
-                {/* Danh sách sản phẩm */}
                 <div className="card">
                     <div className="card-body">
                         <h4>Danh sách sản phẩm trong đơn</h4>
@@ -166,7 +181,12 @@ const ConsignmentDetailPage = () => {
                                                     />
                                                 </td>
                                                 <td>
-                                                    <button className="btn btn-sm btn-danger">Xóa</button>
+                                                    <button
+                                                        className="btn btn-sm btn-danger"
+                                                        onClick={() => handleDeleteProduct(product.Product_ID)}
+                                                    >
+                                                        Xóa
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -201,7 +221,12 @@ const ConsignmentDetailPage = () => {
                                                 <td>{product.Quantity || "Không có"}</td>
                                                 <td>{product.Product_Status || "Không có"}</td>
                                                 <td>
-                                                    <button className="btn btn-sm btn-danger">Xóa</button>
+                                                    <button
+                                                        className="btn btn-sm btn-danger"
+                                                        onClick={() => handleDeleteProduct(product.Product_ID)}
+                                                    >
+                                                        Xóa
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}

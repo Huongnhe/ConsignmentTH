@@ -176,3 +176,22 @@ export const rejectConsignmentTicketAPI = async (token, ticketID) => {
         throw error;
     }
 };
+
+// Xóa sản phẩm trong đơn ký gửi
+export const deleteProductInConsignmentAPI = async (token, consignmentId, productId) => {
+    try {
+        const response = await axios.delete(
+            `${API_URL}/consignments/${consignmentId}/products/${productId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        console.log("Phản hồi từ API khi xóa sản phẩm:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi khi xóa sản phẩm trong đơn:", error.response?.data || error.message);
+        throw error;
+    }
+};
