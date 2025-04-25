@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthDetail } from "../context/AuthDetail";
-import { ConsignContext } from "../context/AuthConsign"; // ✅ THÊM
+import { ConsignContext, ConsignProvider } from "../context/AuthConsign"; // ✅ THÊM
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser";
 
@@ -13,6 +13,8 @@ const ConsignmentDetailPage = () => {
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
     const navigate = useNavigate();
     const { deleteProductInConsignment } = useContext(ConsignContext); // ✅ THÊM
+    console.log("Delete function exists:", typeof deleteProductInConsignment === 'function');
+
 
     useEffect(() => {
         if (id !== prevIdRef.current) {
@@ -27,6 +29,9 @@ const ConsignmentDetailPage = () => {
         }
     }, [consignmentDetail]);
 
+    // consignmentDetail.Products?.map((product, index)
+
+    // const productID = consignmentDetail.Products?.map(product => product.Product_ID);
     const handleUpdate = () => {
         console.log("Cập nhật chi tiết đơn ký gửi:", updatedConsignmentDetail);
         // TODO: Gọi API cập nhật dữ liệu backend
@@ -39,21 +44,49 @@ const ConsignmentDetailPage = () => {
         navigate("/consignment");
     };
 
-    // ✅ THÊM: Hàm xử lý xóa sản phẩm khỏi đơn
     const handleDeleteProduct = async (productId) => {
-        if (!consignmentDetail?.Consignment_ID || !productId) return;
-        const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn?");
+        // alert("Xóa sản phẩm với ID: " + productId); // Debug log
+        if (!consignmentDetail?.Consignment_ID || !productId) {
+            alert("Thiếu thông tin đơn ký gửi hoặc sản phẩm");
+            return;
+        }
+
+        const confirmDelete = window.confirm(
+            "Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn?"
+        );
+
         if (!confirmDelete) return;
 
         try {
-            await deleteProductInConsignment(consignmentDetail.Consignment_ID, productId);
-            await fetchConsignmentDetail(id); // cập nhật lại UI
+            const result = await deleteProductInConsignment(
+                consignmentDetail.Consignment_ID,
+                // alert("Xóa sản phẩm với IDádfg: " + consignmentDetail.Consignment_ID), // Debug log
+                productId
+            );
+            // alert("Xóa sản phẩm với IDádfg: " + result); // Debug log
+
+            if (!result) {
+                throw new Error("Không nhận được phản hồi từ server");
+            }
+
+            console.log("Kết quả xóa:", result); // Debug log
+
+            if (result.success) {
+                if (result.ticketDeleted) {
+                    alert("Đơn ký gửi đã bị xóa do không còn sản phẩm!");
+                    navigate("/consignments");
+                } else {
+                    alert("Xóa sản phẩm thành công!");
+                    await fetchConsignmentDetail(id);
+                }
+            } else {
+                alert(result.message || "Xóa sản phẩm không thành công");
+            }
         } catch (err) {
-            console.error("Lỗi khi xóa sản phẩm:", err);
-            alert("Không thể xóa sản phẩm khỏi đơn.");
+            console.error("Lỗi chi tiết:", err);
+            alert(err.message || "Lỗi khi xóa sản phẩm");
         }
     };
-
     const handleProductChange = (index, field, value) => {
         const updatedProducts = [...updatedConsignmentDetail.Products];
         updatedProducts[index][field] = value;
@@ -81,6 +114,7 @@ const ConsignmentDetailPage = () => {
     if (!consignmentDetail) return <div className="text-center">Không có chi tiết đơn ký gửi</div>;
 
     return (
+        <ConsignProvider>
         <div>
             <Navbar />
             <div className="container mt-5">
@@ -239,8 +273,9 @@ const ConsignmentDetailPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div></ConsignProvider>
     );
+    
 };
 
 export default ConsignmentDetailPage;

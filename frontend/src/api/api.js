@@ -180,16 +180,22 @@ export const rejectConsignmentTicketAPI = async (token, ticketID) => {
 // Xóa sản phẩm trong đơn ký gửi
 export const deleteProductInConsignmentAPI = async (token, consignmentId, productId) => {
     try {
-        const response = await axios.delete(
+        const response = await axios.post(
             `${API_URL}/consignments/${consignmentId}/products/${productId}`,
+            {},
+            
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             }
         );
+        
         console.log("Phản hồi từ API khi xóa sản phẩm:", response.data);
+        console.log("Token dùng để gọi API:", token);
         return response.data;
+        
+
     } catch (error) {
         console.error("Lỗi khi xóa sản phẩm trong đơn:", error.response?.data || error.message);
         throw error;

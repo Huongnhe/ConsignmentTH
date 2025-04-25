@@ -27,7 +27,7 @@ router.post("/consigns", authenticateUser, fetchUserProducts);
 router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
 router.put("/updateConsign/:id", authenticateUser, updateConsignmentProduct);
-router.delete("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
+router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
 
 //Admin
 router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
