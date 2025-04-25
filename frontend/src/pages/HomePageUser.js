@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser.js";
 
 const HomePage = () => {
-  const [showHero, setShowHero] = useState(true);
+  const [showHero, setShowHero] = useState(false);
 
   // Brand story data
   const brandSections = [
@@ -28,11 +28,24 @@ const HomePage = () => {
     }
   ];
 
+  useEffect(() => {
+    // Kiểm tra sessionStorage (sẽ tự động reset khi đóng tab)
+    const hasSeenHero = sessionStorage.getItem('hasSeenHero');
+    if (!hasSeenHero) {
+      setShowHero(true);
+      sessionStorage.setItem('hasSeenHero', 'true');
+    }
+  }, []);
+
+  const handleCloseHero = () => {
+    setShowHero(false);
+  };
+
   return (
     <div className="luxury-theme" style={{ backgroundColor: "#FFF9F0", minHeight: "100vh" }}>
       <Navbar />
 
-      {/* Hero Section */}
+      {/* Hero Section (chỉ hiện khi mới đăng nhập) */}
       {showHero && (
         <div className="d-flex justify-content-center align-items-center vh-100">
           <div className="text-center" style={{ maxWidth: "800px" }}>
@@ -87,13 +100,14 @@ const HomePage = () => {
                   border: "none",
                   minWidth: "200px"
                 }}
+                onClick={handleCloseHero}
               >
                 CONSIGN NOW
               </Link>
 
               <button
                 className="btn px-4 py-2"
-                onClick={() => setShowHero(false)}
+                onClick={handleCloseHero}
                 style={{
                   letterSpacing: "1px",
                   fontWeight: "500",
@@ -110,7 +124,7 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Brand Story Sections - Mosaic Layout */}
+      {/* Brand Story Sections (hiện sau khi đóng hero) */}
       {!showHero && (
         <div className="container py-5">
           <div className="row justify-content-center">
