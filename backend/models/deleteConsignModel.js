@@ -28,16 +28,10 @@ const deleteProductFromConsignment = async (consignmentId, productId) => {
             [consignmentId]
         );
 
-        // 4. Nếu chỉ còn 1 sản phẩm cuối, thông báo trước khi xóa
         let productDeleted = false;
         let ticketDeleted = false;
 
-        if (ticketProducts[0].count < 0 ) {
-            // Nếu chỉ còn 1 sản phẩm trong ticket, thông báo rằng ticket sẽ bị xóa
-            throw new Error("Việc xóa sản phẩm này sẽ khiến đơn ký gửi của bạn bị xóa.");
-        }
-
-        // 5. Kiểm tra sản phẩm có còn tồn tại trong bất kỳ ticket nào khác
+        // 4. Kiểm tra sản phẩm có còn tồn tại trong bất kỳ ticket nào khác
         const [productInTickets] = await connection.execute(
             `SELECT COUNT(*) AS count 
              FROM TH_Consignment_Ticket_Product_Detail 
@@ -45,7 +39,6 @@ const deleteProductFromConsignment = async (consignmentId, productId) => {
             [productId]
         );
 
-        // 6. Nếu sản phẩm không còn trong bất kỳ ticket nào, xóa sản phẩm khỏi bảng TH_Product
         if (productInTickets[0].count === 0) {
             await connection.execute(
                 `DELETE FROM TH_Product WHERE ID = ?`,
@@ -54,7 +47,7 @@ const deleteProductFromConsignment = async (consignmentId, productId) => {
             productDeleted = true;
         }
 
-        // 7. Nếu không còn sản phẩm nào trong ticket, xóa ticket
+        // 5. Nếu không còn sản phẩm nào trong ticket, xóa ticket
         if (ticketProducts[0].count === 0) {
             await connection.execute(
                 `DELETE FROM TH_Consignment_Ticket WHERE ID = ?`,
@@ -63,7 +56,6 @@ const deleteProductFromConsignment = async (consignmentId, productId) => {
             ticketDeleted = true;
         }
 
-        // Commit transaction
         await connection.commit();
 
         return {
@@ -74,12 +66,51 @@ const deleteProductFromConsignment = async (consignmentId, productId) => {
     } catch (error) {
         if (connection) await connection.rollback();
         console.error("Error deleting product from consignment:", error.message);
-        throw error;  // Throw error to be caught in controller
+        throw error;
     } finally {
-        if (connection) connection.release();  // Ensure release of connection
+        if (connection) connection.release();
+    }
+};
+
+const deleteConsignment = async (consignmentId) => {
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // 1. Kiểm tra nếu đơn ký gửi có tồn tại sản phẩm nào
+        const [ticketProducts] = await connection.execute(
+            `SELECT COUNT(*) AS count 
+             FROM TH_Consignment_Ticket_Product_Detail 
+             WHERE Ticket_id = ?`,
+            [consignmentId]
+        );
+
+        if (ticketProducts[0].count === 0) {
+            // 2. Nếu không còn sản phẩm nào, xóa đơn ký gửi
+            await connection.execute(
+                `DELETE FROM TH_Consignment_Ticket 
+                 WHERE ID = ?`,
+                [consignmentId]
+            );
+
+            await connection.commit();
+
+            return { success: true, message: "Đơn ký gửi đã được xóa." };
+        } else {
+            await connection.commit();
+            return { success: false, message: "Đơn ký gửi vẫn còn sản phẩm." };
+        }
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error("Error deleting consignment:", error.message);
+        throw error;
+    } finally {
+        if (connection) connection.release();
     }
 };
 
 module.exports = {
-    deleteProductFromConsignment
+    deleteProductFromConsignment,
+    deleteConsignment
 };

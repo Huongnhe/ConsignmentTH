@@ -67,8 +67,8 @@ export const ConsignProvider = ({ children }) => {
         const token = localStorage.getItem("token");
         // console.log("Tokennhe:", user);
         
-        if (token) {
-            setError("Người dùng đăng nhập.");
+        if (!token) {
+            setError("Người dùng chưa đăng nhập.");
             // return;
         }
 
@@ -86,7 +86,7 @@ export const ConsignProvider = ({ children }) => {
             console.error("Lỗi API:", error);
             return {
                 success: false,
-                message: error.response?.token?.message || "Lỗi serversdfghjk"
+                message: error.response?.token?.message || "Lỗi server"
             };
         } finally {
             setLoading(false);
