@@ -8,7 +8,7 @@ import Navbar from "./MenuUser";
 const ConsignmentDetailPage = () => {
     const { id } = useParams();
     const prevIdRef = useRef(null);
-    const { consignmentDetail, fetchConsignmentDetail, deleteConsignment, loading, error } = useAuthDetail(); // Thêm deleteConsignment từ context
+    const { consignmentDetail, fetchConsignmentDetail, deleteConsignment,updateConsignment, loading, error } = useAuthDetail(); 
     const [isEditMode, setIsEditMode] = useState(false);
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
     const navigate = useNavigate();
@@ -29,7 +29,7 @@ const ConsignmentDetailPage = () => {
     }, [consignmentDetail]);
 
     const handleUpdate = () => {
-        console.log("Cập nhật chi tiết đơn ký gửi:", updatedConsignmentDetail);
+        console.log("Cập nhật chi tiết đơn ký gửi:", updateConsignment);
         setIsEditMode(false);
     };
 
@@ -156,6 +156,7 @@ const ConsignmentDetailPage = () => {
                                             <th>Loại sản phẩm</th>
                                             <th>Giá góc</th>
                                             <th>Giá ký gửi</th>
+                                            <th>Giá Sales</th>
                                             <th>Số lượng</th>
                                             <th>Tình trạng sản phẩm</th>
                                             <th>Thao tác</th>
@@ -208,6 +209,14 @@ const ConsignmentDetailPage = () => {
                                                     <input
                                                         type="number"
                                                         className="form-control"
+                                                        value={product.Sale_Price || ""}
+                                                        onChange={(e) => handleProductChange(index, "Sale_Price", e.target.value)}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
                                                         value={product.Quantity || ""}
                                                         onChange={(e) => handleProductChange(index, "Quantity", e.target.value)}
                                                     />
@@ -245,6 +254,7 @@ const ConsignmentDetailPage = () => {
                                             <th>Loại sản phẩm</th>
                                             <th>Giá góc</th>
                                             <th>Giá ký gửi</th>
+                                            <th>Giá Sales</th>
                                             <th>Số lượng</th>
                                             <th>Tình trạng sản phẩm</th>
                                             <th>Thao tác</th>
@@ -258,6 +268,7 @@ const ConsignmentDetailPage = () => {
                                                 <td>{product.Product_Type_Name}</td>
                                                 <td>{product.Original_Price ? `${product.Original_Price} VNĐ` : "Không có"}</td>
                                                 <td>{product.Consignment_Price ? `${product.Consignment_Price} VNĐ` : "Không có"}</td>
+                                                <td>{product.Sale_Price ? `${product.Sale_Price} VNĐ` : "Không có"}</td>
                                                 <td>{product.Quantity}</td>
                                                 <td>{product.Product_Status}</td>
                                                 <td>

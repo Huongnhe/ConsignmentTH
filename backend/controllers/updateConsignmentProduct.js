@@ -2,37 +2,25 @@ const { updateConsignment } = require("../models/updateConsignModel");
 
 const updateConsignmentProduct = async (req, res) => {
     try {
-        const productId = req.params.id;
+        const productId = req.params.productId;
+        const consignmentId = req.params.consignmentId;
+
         const {
             Product_name,
             Brand_id,
             Product_type_id,
             Original_price,
             Consignment_price,
-            Quantity,
-            Product_status,
-            Consignment_status
+            Quantity
         } = req.body;
 
-        // Kiểm tra giá trị bắt buộc
+        // Kiểm tra các trường bắt buộc
         if (
             !Product_name || !Brand_id || !Product_type_id ||
             Original_price == null || Consignment_price == null ||
-            Quantity == null || !Product_status || !Consignment_status
+            Quantity == null
         ) {
             return res.status(400).json({ error: "Vui lòng nhập đầy đủ thông tin sản phẩm ký gửi" });
-        }
-
-        // Ràng buộc giá trị enum
-        const validProductStatuses = ["Consigned", "Received", "Sold"];
-        const validConsignmentStatuses = ["Pending", "Approved", "Rejected"];
-
-        if (!validProductStatuses.includes(Product_status)) {
-            return res.status(400).json({ error: "Tình trạng sản phẩm không hợp lệ" });
-        }
-
-        if (!validConsignmentStatuses.includes(Consignment_status)) {
-            return res.status(400).json({ error: "Tình trạng đơn không hợp lệ" });
         }
 
         const productData = {
@@ -41,12 +29,10 @@ const updateConsignmentProduct = async (req, res) => {
             Product_type_id,
             Original_price,
             Consignment_price,
-            Quantity,
-            Product_status,
-            Consignment_status
+            Quantity
         };
 
-        const result = await updateConsignment(productId, productData);
+        const result = await updateConsignment(productId, consignmentId, productData);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: "Không tìm thấy sản phẩm ký gửi cần cập nhật" });
