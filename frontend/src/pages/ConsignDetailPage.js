@@ -8,7 +8,7 @@ import Navbar from "./MenuUser";
 const ConsignmentDetailPage = () => {
     const { id } = useParams();
     const prevIdRef = useRef(null);
-    const { consignmentDetail, fetchConsignmentDetail, deleteConsignment,updateConsignment, loading, error } = useAuthDetail(); 
+    const { consignmentDetail, fetchConsignmentDetail, deleteConsignment, updateConsignment, loading, error } = useAuthDetail(); 
     const [isEditMode, setIsEditMode] = useState(false);
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
     const navigate = useNavigate();
@@ -27,10 +27,23 @@ const ConsignmentDetailPage = () => {
             setUpdatedConsignmentDetail({ ...consignmentDetail });
         }
     }, [consignmentDetail]);
-
-    const handleUpdate = () => {
-        console.log("Cập nhật chi tiết đơn ký gửi:", updateConsignment);
-        setIsEditMode(false);
+   
+    const handleUpdate = async (ProductId) => {
+        const confirmUpdate = window.confirm("Bạn có chắc chắn muốn cập nhật thông tin này?");
+        if (confirmUpdate) {
+            try {
+    
+                const updatedData = await updateConsignment(consignmentDetail.Consignment_ID, ProductId);
+                alert(ProductId)
+                if (updatedData) {
+                    alert("Cập nhật thành công!");
+                    setIsEditMode(false);
+                    await fetchConsignmentDetail(id); // Tải lại chi tiết đơn ký gửi sau khi cập nhật
+                }
+            } catch (err) {
+                alert(err.message || "Cập nhật không thành công.");
+            }
+        }
     };
 
     const handleDelete = async () => {
@@ -273,7 +286,13 @@ const ConsignmentDetailPage = () => {
                                                 <td>{product.Product_Status}</td>
                                                 <td>
                                                     <button
-                                                        className="btn btn-sm btn-danger"
+                                                        className="btn btn-sm btn-warning"
+                                                        onClick={() => setIsEditMode(true)}
+                                                    >
+                                                        Chỉnh sửa
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-sm btn-danger ml-2"
                                                         onClick={() => handleDeleteProduct(product.Product_ID)}
                                                     >
                                                         Xóa
@@ -283,8 +302,7 @@ const ConsignmentDetailPage = () => {
                                         ))}
                                     </tbody>
                                 </table>
-                                <button onClick={() => setIsEditMode(true)} className="btn btn-warning">Chỉnh sửa</button>
-                                <button onClick={handleDelete} className="btn btn-danger ml-2">Xóa đơn ký gửi</button>
+                                <button onClick={handleDelete} className="btn btn-danger">Xóa đơn ký gửi</button>
                             </div>
                         )}
                     </div>
