@@ -78,7 +78,12 @@ const deleteConsignment = async (consignmentId) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. Kiểm tra nếu đơn ký gửi có tồn tại sản phẩm nào
+        await connection.execute(
+            `DELETE FROM TH_Consignment_Ticket_Product_Detail 
+             WHERE Ticket_id = ?`,
+            [consignmentId]
+        );
+
         const [ticketProducts] = await connection.execute(
             `SELECT COUNT(*) AS count 
              FROM TH_Consignment_Ticket_Product_Detail 
@@ -87,7 +92,7 @@ const deleteConsignment = async (consignmentId) => {
         );
 
         if (ticketProducts[0].count === 0) {
-            // 2. Nếu không còn sản phẩm nào, xóa đơn ký gửi
+
             await connection.execute(
                 `DELETE FROM TH_Consignment_Ticket 
                  WHERE ID = ?`,

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getAllConsignmentTicketsAPI, getPendingConsignmentsAPI, getReviewedConsignmentsAPI, approveConsignmentTicketAPI, rejectConsignmentTicketAPI } from "../api/api";
+import { getPendingConsignmentsAPI, getReviewedConsignmentsAPI, approveConsignmentTicketAPI, rejectConsignmentTicketAPI } from "../api/api";
 
 const AdminConsignmentContext = createContext();
 

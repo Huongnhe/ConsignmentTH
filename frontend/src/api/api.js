@@ -201,3 +201,26 @@ export const deleteProductInConsignmentAPI = async (token, consignmentId, produc
         throw error;
     }
 };
+export const deleteConsignmentAPI = async (token, consignmentId) => {
+    try {
+        const response = await axios.post(
+            `${API_URL}/consignments/${consignmentId}`,
+            {},
+            
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        
+        console.log("Phản hồi từ API khi xóa sản phẩm:", response.data);
+        console.log("Token dùng để gọi API:", token);
+        return response.data;
+        
+
+    } catch (error) {
+        console.error("Lỗi khi xóa đơn:", error.response?.data || error.message);
+        throw error;
+    }
+};

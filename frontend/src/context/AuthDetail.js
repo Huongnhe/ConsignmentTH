@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
-import { fetchConsignmentDetailAPI } from "../api/api";
+import { fetchConsignmentDetailAPI, deleteConsignmentAPI  } from "../api/api";
 // import { fetchConsignmentDetailAPI } from "../api/api";
 
 // Tạo context
@@ -45,10 +45,33 @@ export const AuthDetailProvider = ({ children }) => {
             setLoading(false);
         }
     };
+    
+    const deleteConsignment = async (consignmentId) => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            setError("Token không tồn tại.");
+            return;
+        }
+
+        try {
+            const result = await deleteConsignmentAPI(token, consignmentId);
+
+            if (result.success) {
+                alert("Đơn ký gửi đã được xóa thành công!");
+                return result; // Trả về kết quả khi xóa thành công
+            } else {
+                setError(result.message || "Xóa đơn ký gửi không thành công.");
+            }
+        } catch (err) {
+            setError(err.message || "Lỗi khi xóa đơn ký gửi.");
+            console.error("Lỗi xóa đơn ký gửi:", err);
+        }
+    };
 
     return (
         <AuthDetailContext.Provider
-            value={{ consignmentDetail, fetchConsignmentDetail, loading, error }}
+            value={{ consignmentDetail, fetchConsignmentDetail,deleteConsignment, loading, error }}
         >
             {children}
         </AuthDetailContext.Provider>

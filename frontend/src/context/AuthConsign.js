@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
-import { getUserProducts, createConsign, deleteProductInConsignmentAPI } from "../api/api";
+import { getUserProducts, deleteProductInConsignmentAPI } from "../api/api";
 import { AuthContext } from "./AuthContext";
 
 export const ConsignContext = createContext();

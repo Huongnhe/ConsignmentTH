@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuthDetail } from "../context/AuthDetail";
+import { useAuthDetail } from "../context/AuthDetail"; // Vẫn sử dụng useAuthDetail từ context
 import { ConsignContext, ConsignProvider } from "../context/AuthConsign";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser";
@@ -8,7 +8,7 @@ import Navbar from "./MenuUser";
 const ConsignmentDetailPage = () => {
     const { id } = useParams();
     const prevIdRef = useRef(null);
-    const { consignmentDetail, fetchConsignmentDetail, loading, error } = useAuthDetail();
+    const { consignmentDetail, fetchConsignmentDetail, deleteConsignment, loading, error } = useAuthDetail(); // Thêm deleteConsignment từ context
     const [isEditMode, setIsEditMode] = useState(false);
     const [updatedConsignmentDetail, setUpdatedConsignmentDetail] = useState({});
     const navigate = useNavigate();
@@ -33,15 +33,21 @@ const ConsignmentDetailPage = () => {
         setIsEditMode(false);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa đơn ký gửi này?");
         if (confirmDelete) {
             console.log("Xóa đơn ký gửi với ID:", consignmentDetail.Consignment_ID);
-            navigate("/consigns");
+            try {
+                const result = await deleteConsignment(consignmentDetail.Consignment_ID);
+                if (result) {
+                    navigate("/consigns"); // Chuyển hướng sau khi xóa thành công
+                }
+            } catch (err) {
+                alert(err.message || "Lỗi khi xóa đơn ký gửi");
+            }
         }
     };
 
-   
     const handleDeleteProduct = async (productId) => {
         if (!consignmentDetail?.Consignment_ID || !productId) {
             alert("Thiếu thông tin đơn ký gửi hoặc sản phẩm");
@@ -252,8 +258,8 @@ const ConsignmentDetailPage = () => {
                                                 <td>{product.Product_Type_Name}</td>
                                                 <td>{product.Original_Price ? `${product.Original_Price} VNĐ` : "Không có"}</td>
                                                 <td>{product.Consignment_Price ? `${product.Consignment_Price} VNĐ` : "Không có"}</td>
-                                                <td>{product.Quantity || "Không có"}</td>
-                                                <td>{product.Product_Status || "Không có"}</td>
+                                                <td>{product.Quantity}</td>
+                                                <td>{product.Product_Status}</td>
                                                 <td>
                                                     <button
                                                         className="btn btn-sm btn-danger"
@@ -266,14 +272,15 @@ const ConsignmentDetailPage = () => {
                                         ))}
                                     </tbody>
                                 </table>
-                                <button onClick={() => setIsEditMode(true)} className="btn btn-warning mr-2">Chỉnh sửa đơn</button>
-                                <button onClick={handleDelete} className="btn btn-danger">Xóa đơn</button>
+                                <button onClick={() => setIsEditMode(true)} className="btn btn-warning">Chỉnh sửa</button>
+                                <button onClick={handleDelete} className="btn btn-danger ml-2">Xóa đơn ký gửi</button>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-        </div></ConsignProvider>
+        </div>
+        </ConsignProvider>
     );
 };
 

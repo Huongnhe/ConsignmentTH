@@ -5,7 +5,7 @@ const authenticateUser = require("../middeleware/authMiddleware");
 const { createConsignController } = require("../controllers/CreateConsignController");
 const { fetchConsignmentDetail } = require("../controllers/detailConsignController");
 const { updateConsignmentProduct } = require("../controllers/updateConsignmentProduct");
-const {deleteProductInConsignment } = require("../controllers/deleteConsignController");
+const {deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
 
 //Controller cho admin
 const {
@@ -28,7 +28,7 @@ router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
 router.put("/updateConsign/:id", authenticateUser, updateConsignmentProduct);
 router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
-
+router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
 //Admin
 router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
 router.post("/admin/consignments/pending", authenticateUser, fetchPendingConsignmentTickets);

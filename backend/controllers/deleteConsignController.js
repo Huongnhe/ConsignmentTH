@@ -1,4 +1,4 @@
-const { deleteProductFromConsignment } = require("../models/deleteConsignModel");
+const { deleteProductFromConsignment, deleteConsignment } = require("../models/deleteConsignModel");
 const { getConsignmentDetail } = require("../models/detailConsignModel");
 
 const deleteProductInConsignment = async (req, res) => {
@@ -52,7 +52,6 @@ const deleteProductInConsignment = async (req, res) => {
             });
         }
 
-
         return res.json({
             success: true,
             message: "Xóa sản phẩm thành công",
@@ -70,6 +69,36 @@ const deleteProductInConsignment = async (req, res) => {
     }
 };
 
+const deleteConsignmentID = async (req, res) => {
+    const { consignmentId } = req.params;
+
+    if (!consignmentId) {
+        return res.status(400).json({ error: "Thiếu ID đơn ký gửi" });
+    }
+
+    try {
+        // Gọi hàm xóa đơn ký gửi (dùng đúng tên hàm là `deleteConsignment`)
+        const { success, message } = await deleteConsignment(consignmentId);
+
+        if (!success) {
+            return res.status(500).json({ message });
+        }
+
+        return res.json({
+            success: true,
+            message: message || "Đơn ký gửi đã được xóa thành công"
+        });
+
+    } catch (err) {
+        console.error("Lỗi khi xóa đơn ký gửi:", err);
+        return res.status(500).json({
+            error: "Lỗi server khi xóa đơn ký gửi",
+            detail: err.message
+        });
+    }
+};
+
 module.exports = {
-    deleteProductInConsignment
+    deleteProductInConsignment,
+    deleteConsignmentID
 };
