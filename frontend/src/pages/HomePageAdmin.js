@@ -13,53 +13,113 @@ const HomePageAdmin = () => {
     }, [user]);
 
     return (
-        <div className="d-flex">
+        <div className="d-flex min-vh-100 bg-light">
             {/* Sidebar */}
             <SidebarMenu />
 
             {/* Main Content */}
             <div
-                className="container mt-5"
+                className="container-fluid py-5"
                 style={{
                     marginLeft: "250px",
                     flex: 1,
-                    padding: "20px",
+                    padding: "40px",
                 }}
             >
-                <h2 className="text-center text-primary mb-4">Trang Quản Trị</h2>
+                <div className="row mb-5">
+                    <div className="col-12">
+                        <h2 className="text-dark mb-3">Admin Dashboard</h2>
+                        <p className="text-muted">Manage your store operations</p>
+                    </div>
+                </div>
+
                 <div className="row">
-                    {/* Quản lý Ký Gửi */}
-                    <div className="col-md-4 mb-4">
-                        <div className="card text-center p-4 shadow rounded-lg">
-                            <h4 className="font-weight-bold">Quản lý Ký Gửi</h4>
-                            <p className="text-muted">Theo dõi và duyệt các phiếu ký gửi</p>
-                            <Link to="/admin/consignments" className="btn btn-outline-primary w-100">
-                                Xem chi tiết
-                            </Link>
+                    {/* Consignment Management */}
+                    <div className="col-lg-4 col-md-6 mb-4">
+                        <div className="card border-0 shadow-sm h-100 transition-all hover-shadow">
+                            <div className="card-body p-4 d-flex flex-column">
+                                <div className="mb-4">
+                                    <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                                        <i className="bi bi-box-seam text-primary fs-4"></i>
+                                    </div>
+                                    <h5 className="text-dark">Consignment Management</h5>
+                                    <p className="text-muted mb-0">
+                                        Review and approve consignment requests from sellers
+                                    </p>
+                                </div>
+                                <Link 
+                                    to="/admin/consignments" 
+                                    className="btn btn-outline-primary mt-auto align-self-start"
+                                >
+                                    View Details
+                                    <i className="bi bi-arrow-right ms-2"></i>
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                    {/* Quản lý Đơn Hàng */}
-                    <div className="col-md-4 mb-4">
-                        <div className="card text-center p-4 shadow rounded-lg">
-                            <h4 className="font-weight-bold">Quản lý Đơn Hàng</h4>
-                            <p className="text-muted">Kiểm tra và xử lý đơn hàng</p>
-                            <Link to="/admin/orders" className="btn btn-outline-primary w-100">
-                                Xem chi tiết
-                            </Link>
+
+                    {/* Order Management */}
+                    <div className="col-lg-4 col-md-6 mb-4">
+                        <div className="card border-0 shadow-sm h-100 transition-all hover-shadow">
+                            <div className="card-body p-4 d-flex flex-column">
+                                <div className="mb-4">
+                                    <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                                        <i className="bi bi-cart-check text-success fs-4"></i>
+                                    </div>
+                                    <h5 className="text-dark">Order Management</h5>
+                                    <p className="text-muted mb-0">
+                                        Process and track customer orders and shipments
+                                    </p>
+                                </div>
+                                <Link 
+                                    to="/admin/orders" 
+                                    className="btn btn-outline-success mt-auto align-self-start"
+                                >
+                                    View Details
+                                    <i className="bi bi-arrow-right ms-2"></i>
+                                </Link>
+                            </div>
                         </div>
                     </div>
-                    {/* Quản lý Danh Mục */}
-                    <div className="col-md-4 mb-4">
-                        <div className="card text-center p-4 shadow rounded-lg">
-                            <h4 className="font-weight-bold">Quản lý Danh Mục</h4>
-                            <p className="text-muted">Thêm, sửa, xóa thương hiệu và loại sản phẩm</p>
-                            <Link to="/admin/categories" className="btn btn-outline-primary w-100">
-                                Xem chi tiết
-                            </Link>
+
+                    {/* Category Management */}
+                    <div className="col-lg-4 col-md-6 mb-4">
+                        <div className="card border-0 shadow-sm h-100 transition-all hover-shadow">
+                            <div className="card-body p-4 d-flex flex-column">
+                                <div className="mb-4">
+                                    <div className="bg-info bg-opacity-10 rounded-circle d-inline-flex p-3 mb-3">
+                                        <i className="bi bi-tags text-info fs-4"></i>
+                                    </div>
+                                    <h5 className="text-dark">Category Management</h5>
+                                    <p className="text-muted mb-0">
+                                        Manage product brands, categories and specifications
+                                    </p>
+                                </div>
+                                <Link 
+                                    to="/admin/categories" 
+                                    className="btn btn-outline-info mt-auto align-self-start"
+                                >
+                                    View Details
+                                    <i className="bi bi-arrow-right ms-2"></i>
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <style jsx>{`
+                .transition-all {
+                    transition: all 0.3s ease;
+                }
+                .hover-shadow:hover {
+                    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+                    transform: translateY(-2px);
+                }
+                .card {
+                    border-radius: 12px;
+                }
+            `}</style>
         </div>
     );
 };

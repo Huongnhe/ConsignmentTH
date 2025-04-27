@@ -20,6 +20,8 @@ const CreateConsign = () => {
     const [addedProducts, setAddedProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -87,13 +89,18 @@ const CreateConsign = () => {
             }
 
             const response = await createConsign(token, addedProducts);
-            alert(response.message || "Consignment created successfully!");
-            navigate("/consigns");
+            setSuccessMessage(response.message || "Consignment created successfully!");
+            setShowSuccessModal(true);
         } catch (err) {
             setError(err.response?.data?.error || "An error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+        navigate("/consigns");
     };
 
     return (
@@ -291,6 +298,51 @@ const CreateConsign = () => {
                 </div>
             </div>
 
+            {/* Success Modal */}
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow" style={{
+                            backgroundColor: '#fefce8',
+                            borderColor: '#d4a762'
+                        }}>
+                            <div className="modal-header border-0" style={{ backgroundColor: '#d4a762' }}>
+                                <h5 className="modal-title text-white">
+                                    <i className="bi bi-check-circle-fill me-2"></i>
+                                    Success
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={handleCloseSuccessModal}
+                                ></button>
+                            </div>
+                            <div className="modal-body py-4">
+                                <div className="d-flex align-items-center">
+                                    <i className="bi bi-check-circle-fill text-success fs-3 me-3"></i>
+                                    <p className="mb-0 text-amber-900">Consignment created successfully!</p>
+                                </div>
+                            </div>
+                            <div className="modal-footer border-0">
+                                <button
+                                    type="button"
+                                    className="btn px-4 py-2"
+                                    onClick={handleCloseSuccessModal}
+                                    style={{
+                                        backgroundColor: '#d4a762',
+                                        borderColor: '#b88c4a',
+                                        color: '#ffffff'
+                                    }}
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style jsx>{`
                 .bg-amber-50 { background-color: #fffbeb; }
                 .text-amber-900 { color: #78350f; }
@@ -304,6 +356,9 @@ const CreateConsign = () => {
                 }
                 .table-hover tbody tr:hover {
                     background-color: #f0fdf4 !important;
+                }
+                .modal-content {
+                    border: 2px solid;
                 }
             `}</style>
         </div>

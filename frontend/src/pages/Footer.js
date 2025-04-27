@@ -9,7 +9,6 @@ const Footer = () => {
         }}>
             <div className="container">
                 <div className="row">
-                    {/* Store Information */}
                     <div className="col-md-6 mb-4">
                         <h5 style={{
                             color: "#ffffff",
@@ -45,7 +44,6 @@ const Footer = () => {
                         </ul>
                     </div>
 
-                    {/* Map Location */}
                     <div className="col-md-6 mb-4">
                         <h5 style={{
                             color: "#ffffff",
@@ -82,7 +80,6 @@ const Footer = () => {
                     </div>
                 </div>
 
-                {/* Copyright */}
                 <div className="text-center pt-3 mt-3" style={{ 
                     borderTop: "1px solid rgba(255,255,255,0.1)",
                     color: "#999",

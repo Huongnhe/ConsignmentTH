@@ -36,4 +36,8 @@ router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsi
 router.put("/admin/approve/:ticketID", approveConsignmentTicket);
 router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
 
+router.get("/", (req, res) => {
+    res.redirect("/login");
+});
+
 module.exports = router;

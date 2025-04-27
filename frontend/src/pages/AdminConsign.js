@@ -29,25 +29,22 @@ const AdminConsign = () => {
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
       case "approved":
-      case "đã duyệt":
-        return "success";
+        return "bg-success text-white";
       case "rejected":
-      case "từ chối":
-        return "danger";
+        return "bg-danger text-white";
       case "pending":
-      case "đang chờ":
-        return "warning";
+        return "bg-warning text-dark";
       default:
-        return "secondary";
+        return "bg-secondary text-white";
     }
   };
 
   const handleApprove = (ticketID) => {
-    const confirmed = window.confirm("Bạn có chắc chắn muốn *duyệt* phiếu ký gửi này?");
+    const confirmed = window.confirm("Are you sure you want to *approve* this consignment ticket?");
     if (!confirmed) return;
 
     approveConsignmentTicket(ticketID).then(() => {
-      setMessage("Phiếu đã được duyệt thành công.");
+      setMessage("Ticket approved successfully.");
       if (currentTab === "pending") {
         fetchPendingConsignments();
       } else {
@@ -57,11 +54,11 @@ const AdminConsign = () => {
   };
 
   const handleReject = (ticketID) => {
-    const confirmed = window.confirm("Bạn có chắc chắn muốn *từ chối* phiếu ký gửi này?");
+    const confirmed = window.confirm("Are you sure you want to *reject* this consignment ticket?");
     if (!confirmed) return;
 
     rejectConsignmentTicket(ticketID).then(() => {
-      setMessage("Phiếu đã bị từ chối.");
+      setMessage("Ticket has been rejected.");
       if (currentTab === "pending") {
         fetchPendingConsignments();
       } else {
@@ -71,35 +68,37 @@ const AdminConsign = () => {
   };
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid bg-light">
       <div className="row">
-        {/* Menu sidebar bên trái */}
-        <div className="col-md-3 col-lg-2 bg-light min-vh-100 p-0 border-end">
+        <div className="col-md-3 col-lg-2 bg-dark min-vh-100 p-0">
           <SidebarMenu />
         </div>
 
-        {/* Nội dung chính */}
         <div className="col-md-9 col-lg-10 py-4 px-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0">Danh sách phiếu ký gửi</h2>
-            <button onClick={refreshData} className="btn btn-primary" disabled={loading}>
+            <h2 className="mb-0 text-dark">Consignment Tickets</h2>
+            <button 
+              onClick={refreshData} 
+              className="btn btn-outline-dark" 
+              disabled={loading}
+            >
               <i className="bi bi-arrow-clockwise me-1"></i>
-              Làm mới
+              Refresh
             </button>
           </div>
 
           <div className="d-flex mb-4">
             <button
-              className={`btn btn-outline-primary me-2 ${currentTab === "pending" ? "active" : ""}`}
+              className={`btn btn-outline-dark me-2 ${currentTab === "pending" ? "active bg-dark text-white" : ""}`}
               onClick={() => setCurrentTab("pending")}
             >
-              Phiếu Chờ Duyệt
+              Pending Approval
             </button>
             <button
-              className={`btn btn-outline-primary ${currentTab === "reviewed" ? "active" : ""}`}
+              className={`btn btn-outline-dark ${currentTab === "reviewed" ? "active bg-dark text-white" : ""}`}
               onClick={() => setCurrentTab("reviewed")}
             >
-              Phiếu Đã Duyệt/Từ Chối
+              Reviewed Tickets
             </button>
           </div>
 
@@ -112,103 +111,101 @@ const AdminConsign = () => {
 
           {loading ? (
             <div className="d-flex justify-content-center align-items-center" style={{ height: "300px" }}>
-              <div className="spinner-border text-primary" role="status">
+              <div className="spinner-border text-dark" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <span className="ms-2">Đang tải dữ liệu...</span>
+              <span className="ms-2 text-dark">Loading data...</span>
             </div>
           ) : error ? (
             <div className="alert alert-danger m-3">
-              <strong>Lỗi:</strong> {error}
+              <strong>Error:</strong> {error}
               <button onClick={refreshData} className="btn btn-sm btn-outline-danger ms-2">
-                Thử lại
+                Try Again
               </button>
             </div>
           ) : (currentTab === "pending" ? pendingConsignments : reviewedConsignments).length === 0 ? (
-            <div className="alert alert-info">
-              Không có phiếu ký gửi nào
+            <div className="alert alert-secondary">
+              No consignment tickets found
             </div>
           ) : (
             <div className="row g-4">
               {(currentTab === "pending" ? pendingConsignments : reviewedConsignments).map((ticket) => (
                 <div key={ticket.TicketID} className="col-12">
-                  <div className="card shadow-sm">
-                    <div className="card-header bg-light">
+                  <div className="card shadow-sm border-0">
+                    <div className="card-header bg-white border-bottom">
                       <div className="d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">Phiếu #{ticket.TicketID}</h5>
-                        <span className={`badge bg-${getStatusBadge(ticket.Status)}`}>
+                        <h5 className="mb-0 text-dark">Ticket #{ticket.TicketID}</h5>
+                        <span className={`badge ${getStatusBadge(ticket.Status)}`}>
                           {ticket.Status}
                         </span>
                       </div>
                     </div>
-                    <div className="card-body">
+                    <div className="card-body bg-white">
                       <div className="row mb-3">
                         <div className="col-md-6">
-                          <p><strong>Khách hàng:</strong> {ticket.User_name}</p>
-                          <p><strong>Email:</strong> {ticket.Email}</p>
+                          <p className="text-dark"><strong>Customer:</strong> {ticket.User_name}</p>
+                          <p className="text-dark"><strong>Email:</strong> {ticket.Email}</p>
                         </div>
                         <div className="col-md-6">
-                          <p><strong>Ngày tạo:</strong> {ticket.Create_date || "--/--/----"}</p>
-                          <p><strong>Ghi chú:</strong> {ticket.Note || "Không có"}</p>
+                          <p className="text-dark"><strong>Created Date:</strong> {ticket.Create_date || "--/--/----"}</p>
+                          <p className="text-dark"><strong>Notes:</strong> {ticket.Note || "None"}</p>
                         </div>
                       </div>
 
-                      <h6 className="mb-3">Danh sách sản phẩm</h6>
+                      <h6 className="mb-3 text-dark">Product List</h6>
 
                       {ticket.products && ticket.products.length > 0 ? (
                         <div className="table-responsive">
-                          <table className="table table-bordered table-sm table-hover align-middle text-center">
+                          <table className="table table-sm table-hover align-middle text-center">
                             <thead className="table-light">
                               <tr>
-                                <th className="text-start">Tên sản phẩm</th>
-                                <th>SL</th>
-                                <th>Giá gốc</th>
-                                <th>Giá bán</th>
-                                <th>Thương hiệu</th>
-                                <th>Loại</th>
+                                <th className="text-start text-dark">Product Name</th>
+                                <th className="text-dark">Qty</th>
+                                <th className="text-dark">Original Price</th>
+                                <th className="text-dark">Sale Price</th>
+                                <th className="text-dark">Brand</th>
+                                <th className="text-dark">Type</th>
                               </tr>
                             </thead>
                             <tbody>
                               {ticket.products.map((product, idx) => (
                                 <tr key={idx}>
-                                  <td className="text-start">{product.Product_name}</td>
-                                  <td>{product.Quantity}</td>
-                                  <td>{Number(product.Original_price).toLocaleString()}đ</td>
-                                  <td>{Number(product.Sale_price).toLocaleString()}đ</td>
-                                  <td>{product.Brand_name || "-"}</td>
-                                  <td>{product.Product_type_name || "-"}</td>
+                                  <td className="text-start text-dark">{product.Product_name}</td>
+                                  <td className="text-dark">{product.Quantity}</td>
+                                  <td className="text-dark">{Number(product.Original_price).toLocaleString()}đ</td>
+                                  <td className="text-dark">{Number(product.Sale_price).toLocaleString()}đ</td>
+                                  <td className="text-dark">{product.Brand_name || "-"}</td>
+                                  <td className="text-dark">{product.Product_type_name || "-"}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
                       ) : (
-                        <div className="alert alert-warning mb-0">
-                          Không có sản phẩm nào trong phiếu này
+                        <div className="alert alert-secondary mb-0">
+                          No products in this ticket
                         </div>
                       )}
                     </div>
-                    <div className="card-footer bg-light">
+                    <div className="card-footer bg-white border-top">
                       <div className="d-flex justify-content-end">
-                        {/* Nút từ chối - hiển thị trong mọi trường hợp trừ khi đã rejected */}
-                        {(!ticket.Status.includes("Từ chối") && !(ticket.Status === "Rejected")) && (
+                        {(!ticket.Status.includes("Rejected") && !(ticket.Status === "Rejected")) && (
                           <button
                             className="btn btn-sm btn-outline-danger me-2"
                             onClick={() => handleReject(ticket.TicketID)}
                           >
                             <i className="bi bi-x-circle me-1"></i>
-                            Từ chối
+                            Reject
                           </button>
                         )}
 
-                        {/* Nút duyệt - hiển thị trong mọi trường hợp trừ khi đã approved */}
-                        {(!ticket.Status.includes("Đã duyệt") && !(ticket.Status === "Approved")) && (
+                        {(!ticket.Status.includes("Approved") && !(ticket.Status === "Approved")) && (
                           <button
                             className="btn btn-sm btn-outline-success"
                             onClick={() => handleApprove(ticket.TicketID)}
                           >
                             <i className="bi bi-check-circle me-1"></i>
-                            Duyệt
+                            Approve
                           </button>
                         )}
                       </div>

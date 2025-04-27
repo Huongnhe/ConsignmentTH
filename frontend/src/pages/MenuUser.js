@@ -152,7 +152,7 @@ const NavbarUser = () => {
             <li className="nav-item mx-2">
               <Link 
                 className="nav-link px-3" 
-                to="/contact"
+                to="/UserContact"
                 style={{
                   color: "#ffffff",
                   fontWeight: "600",
