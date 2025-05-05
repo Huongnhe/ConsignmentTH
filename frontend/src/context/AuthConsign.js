@@ -66,7 +66,7 @@ export const ConsignProvider = ({ children }) => {
     const deleteProductInConsignment = async (consignmentId, productId) => {
         const token = localStorage.getItem("token");
         // console.log("Tokennhe:", user);
-        
+
         if (!token) {
             setError("Người dùng chưa đăng nhập.");
             // return;
@@ -78,7 +78,7 @@ export const ConsignProvider = ({ children }) => {
         try {
             // console.log("Tokẻten:",consignmentId, productId);
             console.log("Token:", token);
-            
+
             const result = await deleteProductInConsignmentAPI(token, consignmentId, productId);
             return result;
         } catch (error) {
