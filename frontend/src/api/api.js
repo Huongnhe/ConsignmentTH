@@ -228,9 +228,9 @@ export const deleteConsignmentAPI = async (token, consignmentId) => {
 
 export const updateConsignmentAPI = async (token, consignmentId, productId, updatedData) => {
     try {
-        const response = await axios.put(
+        const response = await axios.post(
             `${API_URL}/consignmentUpdate/${consignmentId}/products/${productId}`,
-            updatedData,
+            {updatedData},
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -241,10 +241,14 @@ export const updateConsignmentAPI = async (token, consignmentId, productId, upda
         console.log("Phản hồi từ API khi sửa sản phẩm:", response.data);
         console.log("Token dùng để gọi API:", token);
         return response.data;
-        
-
+    
     } catch (error) {
-        console.error("Lỗi khi sửa đơn:", error.response?.data || error.message);
+        console.error("Chi tiết lỗi API:", {
+            url: error.config?.url,
+            status: error.response?.status,
+            data: error.response?.data,
+            params: { token, consignmentId, productId, updatedData }
+        });
         throw error;
     }
 };

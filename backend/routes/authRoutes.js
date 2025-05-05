@@ -26,7 +26,7 @@ router.post("/login", login);
 router.post("/consigns", authenticateUser, fetchUserProducts);
 router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
-router.put('/consignmentUpdate/:consignmentId/product/:productId', updateConsignmentProduct);
+router.post('/consignmentUpdate/:consignmentId/products/:productId', authenticateUser, updateConsignmentProduct);
 router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
 router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
 //Admin

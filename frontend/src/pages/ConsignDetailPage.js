@@ -16,7 +16,8 @@ const ConsignmentDetailPage = () => {
     const [modalContent, setModalContent] = useState({});
     const navigate = useNavigate();
     const { deleteProductInConsignment } = useContext(ConsignContext);
-
+    const brandOptions = ["Nike", "Adidas", "Gucci", "Puma"];
+    const typeOptions = ["Shoes", "Handbag", "Shirt", "Pants"];
     useEffect(() => {
         if (id !== prevIdRef.current) {
             fetchConsignmentDetail(id);
@@ -40,24 +41,67 @@ const ConsignmentDetailPage = () => {
     };
 
     const handleUpdate = async (ProductId) => {
-        showModal(
-            "Confirm Update", 
-            "Are you sure you want to update this information?",
-            true,
-            async () => {
-                try {
-                    const updatedData = await updateConsignment(consignmentDetail.Consignment_ID, ProductId);
-                    if (updatedData) {
-                        showModal("Success", "Update successful!");
-                        setIsEditMode(false);
-                        await fetchConsignmentDetail(id);
-                    }
-                } catch (err) {
-                    showModal("Error", err.message || "Update failed.");
-                }
-            }
+        const productToUpdate = updatedConsignmentDetail.Products?.find(
+          p => p.Product_ID === ProductId
         );
-    };
+        
+        if (!productToUpdate) {
+          showModal("Error", "Product not found");
+          return;
+        }
+      
+        // Chuyển đổi dữ liệu đúng format BE yêu cầu
+        const updatedData = {
+          Product_name: productToUpdate.Product_Name, 
+          Brand_name: productToUpdate.Brand_Name,     
+          Product_Type_name: productToUpdate.Product_Type_Name,
+          Original_price: Number(productToUpdate.Original_Price),
+          Consignment_price: Number(productToUpdate.Consignment_Price),
+          Sale_price: Number(productToUpdate.Sale_Price),
+          Quantity: Number(productToUpdate.Quantity)
+        };
+
+        // Validate các trường bắt buộc
+        if (
+          !updatedData.Product_name || 
+          !updatedData.Brand_name ||
+          !updatedData.Product_Type_name ||
+          isNaN(updatedData.Original_price) ||
+          isNaN(updatedData.Consignment_price) ||
+          isNaN(updatedData.Sale_price) ||
+          isNaN(updatedData.Quantity)
+        ) {
+          showModal("Error", "Vui lòng điền đầy đủ thông tin sản phẩm");
+          alert(JSON.stringify(updatedData, null, 2)); 
+          return;
+        }
+      
+        showModal(
+          "Confirm Update", 
+          "Are you sure you want to update this product?",
+          true,
+          async () => {
+            try {
+              const result = await updateConsignment(
+                consignmentDetail.Consignment_ID, 
+                ProductId,
+                updatedData
+              );
+              
+              if (result) {
+                showModal("Success", "Cập nhật thành công!");
+                setIsEditMode(false);
+                await fetchConsignmentDetail(id);
+              }
+            } catch (err) {
+              showModal("Error", err.message || "Update failed");
+              alert(JSON.stringify(consignmentDetail.Consignment_ID, null, 2));
+              alert(JSON.stringify(ProductId, null, 2));
+              alert(JSON.stringify(updatedData, null, 2)); 
+            }
+          }
+        );
+      };
 
     const handleDelete = async () => {
         showModal(
@@ -215,22 +259,32 @@ const ConsignmentDetailPage = () => {
                                                             />
                                                         </td>
                                                         <td>
-                                                            <input
-                                                                type="text"
+                                                            <select
                                                                 className="form-control"
                                                                 value={product.Brand_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Brand_Name", e.target.value)}
                                                                 style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
-                                                            />
+                                                            >
+                                                                <option value="">Select brand</option>
+                                                                {brandOptions.map((brand) => (
+                                                                    <option key={brand} value={brand}>{brand}</option>
+                                                                ))}
+                                                            </select>
                                                         </td>
+
                                                         <td>
-                                                            <input
+                                                            <select
                                                                 type="text"
                                                                 className="form-control"
                                                                 value={product.Product_Type_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Product_Type_Name", e.target.value)}
                                                                 style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
-                                                            />
+                                                                >
+                                                                <option value="">Select product type</option>
+                                                                {typeOptions.map((type) => (
+                                                                    <option key={type} value={type}>{type}</option>
+                                                                ))}
+                                                            </select>
                                                         </td>
                                                         <td>
                                                             <input
@@ -308,15 +362,21 @@ const ConsignmentDetailPage = () => {
                                         >
                                             Cancel
                                         </button>
-                                        <button
-                                            onClick={handleUpdate}
+                                        <button 
                                             className="btn px-4 py-2"
                                             style={{
                                                 backgroundColor: '#d4a762',
                                                 borderColor: '#b88c4a',
                                                 color: '#ffffff'
                                             }}
-                                        >
+                                            onClick={() => {
+                                                
+                                                const firstProductId = updatedConsignmentDetail.Products?.[0]?.Product_ID;
+                                                if (firstProductId) {
+                                                    handleUpdate(firstProductId);
+                                                }
+                                                
+                                            }}>
                                             <i className="bi bi-save me-2"></i>
                                             Save Changes
                                         </button>
