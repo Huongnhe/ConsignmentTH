@@ -1,4 +1,4 @@
-const { getUserProducts } = require("../models/consignModel");
+const { getUserProducts } = require("../models/ConsignModel");
 
 const fetchUserProducts = async (req, res) => {
     try {

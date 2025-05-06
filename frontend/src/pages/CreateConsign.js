@@ -15,6 +15,7 @@ const CreateConsign = () => {
         Product_type_name: "",
         Quantity: "",
         Price: "",
+        Image: null, // Thêm trường Image
     });
 
     const [addedProducts, setAddedProducts] = useState([]);
@@ -22,6 +23,7 @@ const CreateConsign = () => {
     const [error, setError] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+    const [imagePreview, setImagePreview] = useState(null); // Thêm state cho preview ảnh
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -29,17 +31,31 @@ const CreateConsign = () => {
         setProductData({ ...productData, [name]: value });
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProductData({ ...productData, Image: file });
+
+            // Tạo preview cho ảnh
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleAddProduct = () => {
         const {
             Product_name, Sale_price, Original_price,
-            Brand_name, Product_type_name, Quantity, Price,
+            Brand_name, Product_type_name, Quantity, Price, Image
         } = productData;
 
         if (
             !Product_name || !Sale_price || !Original_price ||
-            !Brand_name || !Product_type_name || !Quantity || !Price
+            !Brand_name || !Product_type_name || !Quantity || !Price || !Image
         ) {
-            setError("Please fill in all product information.");
+            setError("Please fill in all product information including image.");
             return;
         }
 
@@ -49,6 +65,7 @@ const CreateConsign = () => {
             Original_price: parseFloat(Original_price),
             Brand_name,
             Product_type_name,
+            Image, // Thêm image vào sản phẩm
             details: {
                 Quantity: parseInt(Quantity, 10),
                 Price: parseFloat(Price),
@@ -57,6 +74,7 @@ const CreateConsign = () => {
 
         setAddedProducts([...addedProducts, newProduct]);
 
+        // Reset form và preview ảnh
         setProductData({
             Product_name: "",
             Sale_price: "",
@@ -65,7 +83,9 @@ const CreateConsign = () => {
             Product_type_name: "",
             Quantity: "",
             Price: "",
+            Image: null,
         });
+        setImagePreview(null);
         setError(null);
     };
 
@@ -88,7 +108,18 @@ const CreateConsign = () => {
                 return;
             }
 
-            const response = await createConsign(token, addedProducts);
+            // Tạo FormData để gửi file ảnh
+            const formData = new FormData();
+            formData.append('products', JSON.stringify(addedProducts));
+
+            // Thêm các file ảnh vào FormData
+            addedProducts.forEach((product, index) => {
+                if (product.Image) {
+                    formData.append(`images`, product.Image);
+                }
+            });
+
+            const response = await createConsign(token, formData);
             setSuccessMessage(response.message || "Consignment created successfully!");
             setShowSuccessModal(true);
         } catch (err) {
@@ -219,6 +250,30 @@ const CreateConsign = () => {
                                         style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                     />
                                 </div>
+                                <div className="col-md-12">
+                                    <label className="form-label fw-medium text-amber-900">Product Image</label>
+                                    <input
+                                        type="file"
+                                        className="form-control"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
+                                    />
+                                    {imagePreview && (
+                                        <div className="mt-2">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                style={{
+                                                    maxWidth: '200px',
+                                                    maxHeight: '200px',
+                                                    border: '1px solid #d1d5db',
+                                                    borderRadius: '4px'
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="d-flex justify-content-between mt-4">
@@ -273,6 +328,7 @@ const CreateConsign = () => {
                                                 <th style={{ color: '#065f46' }}>Product</th>
                                                 <th style={{ color: '#065f46' }}>Brand</th>
                                                 <th style={{ color: '#065f46' }}>Type</th>
+                                                <th style={{ color: '#065f46' }}>Image</th>
                                                 <th className="text-end" style={{ color: '#065f46' }}>Qty</th>
                                                 <th className="text-end" style={{ color: '#065f46' }}>Price (VND)</th>
                                             </tr>
@@ -283,6 +339,20 @@ const CreateConsign = () => {
                                                     <td className="fw-medium">{item.Product_name}</td>
                                                     <td>{item.Brand_name}</td>
                                                     <td>{item.Product_type_name}</td>
+                                                    <td>
+                                                        {item.Image && (
+                                                            <img
+                                                                src={URL.createObjectURL(item.Image)}
+                                                                alt={item.Product_name}
+                                                                style={{
+                                                                    width: '50px',
+                                                                    height: '50px',
+                                                                    objectFit: 'cover',
+                                                                    borderRadius: '4px'
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </td>
                                                     <td className="text-end">{item.details.Quantity}</td>
                                                     <td className="text-end fw-medium" style={{ color: '#065f46' }}>
                                                         {item.details.Price.toLocaleString()}
@@ -298,7 +368,6 @@ const CreateConsign = () => {
                 </div>
             </div>
 
-            {/* Success Modal */}
             {/* Success Modal */}
             {showSuccessModal && (
                 <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>

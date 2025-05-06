@@ -10,7 +10,8 @@ const getUserProducts = async (userId) => {
             Original_price,
             th_consignment_ticket.Status,
             Brand_name,
-            Product_type_name  
+            Product_type_name, 
+            th_product.Image
         FROM th_consignment_ticket_product_detail 
         JOIN th_consignment_ticket ON th_consignment_ticket.ID = th_consignment_ticket_product_detail.Ticket_id
         JOIN th_product ON th_product.ID = th_consignment_ticket_product_detail.Product_id 
@@ -44,7 +45,8 @@ const getUserProducts = async (userId) => {
             Sale_price: row.Sale_price,
             Original_price: row.Original_price,
             Brand_name: row.Brand_name,
-            Product_type_name: row.Product_type_name
+            Product_type_name: row.Product_type_name,
+            Image: row.Image
         });
     });
 

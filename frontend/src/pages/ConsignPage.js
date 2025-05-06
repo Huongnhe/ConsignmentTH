@@ -38,6 +38,11 @@ const ConsignmentPage = () => {
         }
     };
 
+    // Hàm xử lý khi ảnh bị lỗi
+    const handleImageError = (e) => {
+        e.target.src = "https://via.placeholder.com/60?text=No+Image";
+    };
+
     return (
         <div className="bg-light min-vh-100">
             <Navbar />
@@ -78,11 +83,10 @@ const ConsignmentPage = () => {
                                                     </span>
                                                 </h5>
                                                 <span
-                                                    className={`badge px-3 py-2 ${
-                                                        ticket.Status === "Approved" ? "bg-success bg-opacity-10 text-success" :
+                                                    className={`badge px-3 py-2 ${ticket.Status === "Approved" ? "bg-success bg-opacity-10 text-success" :
                                                         ticket.Status === "Rejected" ? "bg-danger bg-opacity-10 text-danger" :
-                                                        "bg-warning bg-opacity-10 text-warning"
-                                                    }`}
+                                                            "bg-warning bg-opacity-10 text-warning"
+                                                        }`}
                                                 >
                                                     {ticket.Status}
                                                 </span>
@@ -93,6 +97,7 @@ const ConsignmentPage = () => {
                                                 <table className="table table-hover align-middle mb-0">
                                                     <thead className="bg-light">
                                                         <tr>
+                                                            <th className="text-nowrap text-uppercase small fw-bold">Image</th>
                                                             <th className="text-nowrap text-uppercase small fw-bold">Brand</th>
                                                             <th className="text-nowrap text-uppercase small fw-bold">Category</th>
                                                             <th className="text-nowrap text-uppercase small fw-bold">Product</th>
@@ -103,6 +108,14 @@ const ConsignmentPage = () => {
                                                     <tbody>
                                                         {ticket.products.map((product, idx) => (
                                                             <tr key={idx}>
+                                                                <td>
+                                                                    <img
+                                                                        src={product.Image || "https://via.placeholder.com/60?text=No+Image"}
+                                                                        alt={product.Product_name}
+                                                                        onError={handleImageError}
+                                                                        style={{ width: "60px", height: "60px", objectFit: "cover", borderRadius: "5px" }}
+                                                                    />
+                                                                </td>
                                                                 <td className="fw-medium">{product.Brand_name}</td>
                                                                 <td>{product.Product_type_name}</td>
                                                                 <td>
@@ -119,8 +132,8 @@ const ConsignmentPage = () => {
                                             </div>
                                         </div>
                                         <div className="card-footer bg-white border-0 text-end">
-                                            <Link 
-                                                to={`/detailConsign/${ticket.TicketID}`} 
+                                            <Link
+                                                to={`/detailConsign/${ticket.TicketID}`}
                                                 className="btn btn-primary btn-sm px-4"
                                             >
                                                 <i className="bi bi-eye-fill me-2"></i>

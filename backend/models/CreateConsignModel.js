@@ -57,7 +57,7 @@ const createConsignment = async (productList, userId) => {
             // 2.3 Thêm sản phẩm với salePrice được tính tự động
             const [productResult] = await connection.query(
                 `INSERT INTO th_product 
-                 (Product_name, Sale_price, Original_price, Status, Brand_id, Product_type_id, Image_path)
+                 (Product_name, Sale_price, Original_price, Status, Brand_id, Product_type_id, Image)
                  VALUES (?, ?, ?, 'Consigned', ?, ?, ?)`,
                 [
                     productData.Product_name,
@@ -65,7 +65,7 @@ const createConsignment = async (productList, userId) => {
                     originalPrice,
                     brandId,
                     productTypeId,
-                    productData.Image_path || '../Images/defause.png' // Sử dụng ảnh mặc định nếu không có
+                    productData.Image || '../Images/default.png' // Sử dụng ảnh mặc định nếu không có
                 ]
             );
             const productId = productResult.insertId;
