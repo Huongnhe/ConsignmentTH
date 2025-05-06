@@ -2,7 +2,7 @@ const { createConsignment } = require("../models/CreateConsignModel");
 
 const createConsignController = async (req, res) => {
     const userId = req.user?.id;
-    const productList = req.body; // <-- Chấp nhận mảng sản phẩm
+    const productList = req.body.productList;
 
     if (!userId) {
         return res.status(401).json({ error: "Bạn phải đăng nhập để thực hiện thao tác này" });

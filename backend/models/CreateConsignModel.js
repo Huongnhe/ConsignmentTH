@@ -49,28 +49,34 @@ const createConsignment = async (productList, userId) => {
                 productTypeId = typeRows[0].ID;
             }
 
-            // 2.3 Thêm sản phẩm
+            // 👉 Tính toán giá ký gửi (Price) và giá bán (Sale_price)
+            const originalPrice = productData.Original_price;
+            const consignPrice = originalPrice * 1.80; // Price = Original * 180%
+            const salePrice = consignPrice - (consignPrice * 0.10); // Sale = Price * 10%
+
+            // 2.3 Thêm sản phẩm với salePrice được tính tự động
             const [productResult] = await connection.query(
                 `INSERT INTO th_product 
-                 (Product_name, Sale_price, Original_price, Status, Brand_id, Product_type_id)
-                 VALUES (?, ?, ?, 'Consigned', ?, ?)`,
+                 (Product_name, Sale_price, Original_price, Status, Brand_id, Product_type_id, Image_path)
+                 VALUES (?, ?, ?, 'Consigned', ?, ?, ?)`,
                 [
                     productData.Product_name,
-                    productData.Sale_price,
-                    productData.Original_price,
+                    salePrice,
+                    originalPrice,
                     brandId,
-                    productTypeId
+                    productTypeId,
+                    productData.Image_path || '../Images/defause.png' // Sử dụng ảnh mặc định nếu không có
                 ]
             );
             const productId = productResult.insertId;
 
-            // 2.4 Thêm chi tiết ký gửi
+            // 2.4 Thêm chi tiết ký gửi với consignPrice
             if (productData.details) {
                 await connection.query(
                     `INSERT INTO th_consignment_ticket_product_detail
                      (Ticket_id, Product_id, Quantity, Price)
                      VALUES (?, ?, ?, ?)`,
-                    [ticketId, productId, productData.details.Quantity, productData.details.Price]
+                    [ticketId, productId, productData.details.Quantity, consignPrice]
                 );
             }
         }
