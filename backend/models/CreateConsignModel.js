@@ -67,7 +67,7 @@ const createConsignment = async (productList, userId) => {
             const productId = productResult.insertId;
 
             if (productData.details) {
-                const sellingPrice = productData.Sale_price + (productData.Sale_price * 0.005);
+                const sellingPrice = productData.Sale_price + (productData.Sale_price * 1.5);
                 
                 await connection.query(
                     `INSERT INTO th_consignment_ticket_product_detail

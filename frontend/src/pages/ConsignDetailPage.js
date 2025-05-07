@@ -18,6 +18,7 @@ const ConsignmentDetailPage = () => {
     const { deleteProductInConsignment } = useContext(ConsignContext);
     const brandOptions = ["Nike", "Adidas", "Gucci", "Puma"];
     const typeOptions = ["Shoes", "Handbag", "Shirt", "Pants"];
+    
     useEffect(() => {
         if (id !== prevIdRef.current) {
             fetchConsignmentDetail(id);
@@ -40,6 +41,10 @@ const ConsignmentDetailPage = () => {
         isConfirm ? setShowConfirmModal(true) : setShowSuccessModal(true);
     };
 
+    const shouldShowConsignmentPrice = () => {
+        return consignmentDetail?.Consignment_Status?.toLowerCase() === "approved";
+    };
+
     const handleUpdate = async (ProductId) => {
         const productToUpdate = updatedConsignmentDetail.Products?.find(
           p => p.Product_ID === ProductId
@@ -49,32 +54,35 @@ const ConsignmentDetailPage = () => {
           showModal("Error", "Product not found");
           return;
         }
-      
-        // Chuyển đổi dữ liệu đúng format BE yêu cầu
+        
+        // Chuẩn hóa tên trường theo đúng BE yêu cầu
         const updatedData = {
-          Product_name: productToUpdate.Product_Name, 
-          Brand_name: productToUpdate.Brand_Name,     
-          Product_Type_name: productToUpdate.Product_Type_Name,
-          Original_price: Number(productToUpdate.Original_Price),
-          Consignment_price: Number(productToUpdate.Consignment_Price),
-          Sale_price: Number(productToUpdate.Sale_Price),
-          Quantity: Number(productToUpdate.Quantity)
-        };
-
-        // Validate các trường bắt buộc
+            Product_name: productToUpdate.Product_Name, 
+            Brand_name: productToUpdate.Brand_Name,     
+            Product_Type_Name: productToUpdate.Product_Type_Name || productToUpdate.product_type_Name,
+            Original_price: Number(productToUpdate.Original_Price),
+            Consignment_price: Number(productToUpdate.Consignment_Price),
+            Sale_price: Number(productToUpdate.Sale_Price),
+            Quantity: Number(productToUpdate.Quantity)
+          };
+      
+          // Thêm console.log để debug
+          alert("Data prepared for API:\n" + JSON.stringify(updatedData, null, 2));
+          
+    
         if (
           !updatedData.Product_name || 
           !updatedData.Brand_name ||
-          !updatedData.Product_Type_name ||
+          !updatedData.Product_Type_Name || // Sửa thành Product_Type_Name
           isNaN(updatedData.Original_price) ||
           isNaN(updatedData.Consignment_price) ||
           isNaN(updatedData.Sale_price) ||
           isNaN(updatedData.Quantity)
         ) {
           showModal("Error", "Vui lòng điền đầy đủ thông tin sản phẩm");
-          alert(JSON.stringify(updatedData, null, 2)); 
           return;
         }
+
       
         showModal(
           "Confirm Update", 
@@ -95,9 +103,6 @@ const ConsignmentDetailPage = () => {
               }
             } catch (err) {
               showModal("Error", err.message || "Update failed");
-              alert(JSON.stringify(consignmentDetail.Consignment_ID, null, 2));
-              alert(JSON.stringify(ProductId, null, 2));
-              alert(JSON.stringify(updatedData, null, 2)); 
             }
           }
         );
@@ -235,27 +240,38 @@ const ConsignmentDetailPage = () => {
                                         <table className="table table-hover align-middle">
                                             <thead style={{ backgroundColor: '#ecfdf5' }}>
                                                 <tr>
+                                                    <th style={{ color: '#065f46' }}>Image</th>
                                                     <th style={{ color: '#065f46' }}>Product Name</th>
                                                     <th style={{ color: '#065f46' }}>Brand</th>
                                                     <th style={{ color: '#065f46' }}>Type</th>
                                                     <th style={{ color: '#065f46' }}>Original Price</th>
-                                                    <th style={{ color: '#065f46' }}>Consignment Price</th>
+                                                    {shouldShowConsignmentPrice() && (
+                                                        <th style={{ color: '#065f46' }}>Consignment Price</th>
+                                                    )}
                                                     <th style={{ color: '#065f46' }}>Sale Price</th>
                                                     <th style={{ color: '#065f46' }}>Quantity</th>
                                                     <th style={{ color: '#065f46' }}>Status</th>
-                                                    <th style={{ color: '#065f46' }}>Action</th>
+                            
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {updatedConsignmentDetail.Products?.map((product, index) => (
                                                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
                                                         <td>
+                                                            {product.Product_Image && (
+                                                                <img 
+                                                                    src={product.Product_Image} 
+                                                                    alt={product.Product_Name} 
+                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                                                />
+                                                            )}
+                                                        </td>
+                                                        <td>
                                                             <input
                                                                 type="text"
                                                                 className="form-control"
                                                                 value={product.Product_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Product_Name", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                                             />
                                                         </td>
                                                         <td>
@@ -263,7 +279,6 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Brand_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Brand_Name", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                                             >
                                                                 <option value="">Select brand</option>
                                                                 {brandOptions.map((brand) => (
@@ -271,16 +286,13 @@ const ConsignmentDetailPage = () => {
                                                                 ))}
                                                             </select>
                                                         </td>
-
                                                         <td>
                                                             <select
-                                                                type="text"
                                                                 className="form-control"
                                                                 value={product.Product_Type_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Product_Type_Name", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
-                                                                >
-                                                                <option value="">Select product type</option>
+                                                            >
+                                                                <option value="">Select type</option>
                                                                 {typeOptions.map((type) => (
                                                                     <option key={type} value={type}>{type}</option>
                                                                 ))}
@@ -292,25 +304,24 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Original_Price || ""}
                                                                 onChange={(e) => handleProductChange(index, "Original_Price", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                                             />
                                                         </td>
-                                                        <td>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                value={product.Consignment_Price || ""}
-                                                                onChange={(e) => handleProductChange(index, "Consignment_Price", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
-                                                            />
-                                                        </td>
+                                                        {shouldShowConsignmentPrice() && (
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    value={product.Consignment_Price || ""}
+                                                                    onChange={(e) => handleProductChange(index, "Consignment_Price", e.target.value)}
+                                                                />
+                                                            </td>
+                                                        )}
                                                         <td>
                                                             <input
                                                                 type="number"
                                                                 className="form-control"
                                                                 value={product.Sale_Price || ""}
                                                                 onChange={(e) => handleProductChange(index, "Sale_Price", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                                             />
                                                         </td>
                                                         <td>
@@ -319,18 +330,9 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Quantity || ""}
                                                                 onChange={(e) => handleProductChange(index, "Quantity", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
                                                             />
                                                         </td>
-                                                        <td>
-                                                            <input
-                                                                type="text"
-                                                                className="form-control"
-                                                                value={product.Product_Status || ""}
-                                                                onChange={(e) => handleProductChange(index, "Product_Status", e.target.value)}
-                                                                style={{ borderColor: '#d1d5db', backgroundColor: '#f3f4f6' }}
-                                                            />
-                                                        </td>
+                                        
                                                         <td>
                                                             <button
                                                                 className="btn btn-sm px-3 py-1"
@@ -370,12 +372,10 @@ const ConsignmentDetailPage = () => {
                                                 color: '#ffffff'
                                             }}
                                             onClick={() => {
-                                                
                                                 const firstProductId = updatedConsignmentDetail.Products?.[0]?.Product_ID;
                                                 if (firstProductId) {
                                                     handleUpdate(firstProductId);
                                                 }
-                                                
                                             }}>
                                             <i className="bi bi-save me-2"></i>
                                             Save Changes
@@ -388,11 +388,14 @@ const ConsignmentDetailPage = () => {
                                         <table className="table table-hover align-middle">
                                             <thead style={{ backgroundColor: '#ecfdf5' }}>
                                                 <tr>
+                                                    <th style={{ color: '#065f46' }}>Image</th>
                                                     <th style={{ color: '#065f46' }}>Product Name</th>
                                                     <th style={{ color: '#065f46' }}>Brand</th>
                                                     <th style={{ color: '#065f46' }}>Type</th>
                                                     <th className="text-end" style={{ color: '#065f46' }}>Original Price</th>
-                                                    <th className="text-end" style={{ color: '#065f46' }}>Consignment Price</th>
+                                                    {shouldShowConsignmentPrice() && (
+                                                        <th className="text-end" style={{ color: '#065f46' }}>Consignment Price</th>
+                                                    )}
                                                     <th className="text-end" style={{ color: '#065f46' }}>Sale Price</th>
                                                     <th className="text-end" style={{ color: '#065f46' }}>Quantity</th>
                                                     <th style={{ color: '#065f46' }}>Status</th>
@@ -402,14 +405,29 @@ const ConsignmentDetailPage = () => {
                                             <tbody>
                                                 {consignmentDetail.Products?.map((product, index) => (
                                                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                        <td>
+                                                            {product.Product_Image && (
+                                                                <img 
+                                                                    src={product.Product_Image} 
+                                                                    alt={product.Product_Name} 
+                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                                                />
+                                                            )}
+                                                        </td>
                                                         <td className="fw-medium">{product.Product_Name}</td>
                                                         <td>{product.Brand_Name}</td>
                                                         <td>{product.Product_Type_Name}</td>
                                                         <td className="text-end">{product.Original_Price ? `${product.Original_Price.toLocaleString()} VND` : "-"}</td>
-                                                        <td className="text-end">{product.Consignment_Price ? `${product.Consignment_Price.toLocaleString()} VND` : "-"}</td>
+                                                        {shouldShowConsignmentPrice() && (
+                                                            <td className="text-end">{product.Consignment_Price ? `${product.Consignment_Price.toLocaleString()} VND` : "-"}</td>
+                                                        )}
                                                         <td className="text-end">{product.Sale_Price ? `${product.Sale_Price.toLocaleString()} VND` : "-"}</td>
                                                         <td className="text-end">{product.Quantity}</td>
-                                                        <td>{product.Product_Status}</td>
+                                                        <td>
+                                                            <span className={getStatusColorClass(product.Product_Status)}>
+                                                                {product.Product_Status}
+                                                            </span>
+                                                        </td>
                                                         <td>
                                                             <button
                                                                 className="btn btn-sm px-3 py-1 me-2"
@@ -561,25 +579,6 @@ const ConsignmentDetailPage = () => {
                         </div>
                     </div>
                 )}
-
-                <style jsx>{`
-                    .bg-amber-50 { background-color: #fffbeb; }
-                    .text-amber-900 { color: #78350f; }
-                    .btn:hover {
-                        opacity: 0.9;
-                        transition: opacity 0.2s ease;
-                    }
-                    .form-control:focus, .form-select:focus {
-                        border-color: #d4a762;
-                        box-shadow: 0 0 0 0.25rem rgba(212, 167, 98, 0.25);
-                    }
-                    .table-hover tbody tr:hover {
-                        background-color: #f0fdf4 !important;
-                    }
-                    .modal-content {
-                        border: 2px solid;
-                    }
-                `}</style>
             </div>
         </ConsignProvider>
     );

@@ -8,6 +8,7 @@ const { updateConsignmentProduct } = require("../controllers/updateConsignmentPr
 const {deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
 const multer = require('multer');
 const path = require('path');
+const saleController = require("../controllers/orderConsignController");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -55,6 +56,19 @@ router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsi
 router.put("/admin/approve/:ticketID", approveConsignmentTicket);
 router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
 
+router.get("/", (req, res) => {
+    res.redirect("/login");
+});
+
+router.get("/sale/products/search", authenticateUser, saleController.searchProducts);
+
+// Tạo đơn hàng mới
+router.post("/sale/orders", authenticateUser, saleController.createOrder);
+
+// Xem hóa đơn
+router.get("/sale/orders/:orderId/invoice", authenticateUser, saleController.getInvoice);
+
+// Route mặc định
 router.get("/", (req, res) => {
     res.redirect("/login");
 });

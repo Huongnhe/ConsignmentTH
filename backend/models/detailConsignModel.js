@@ -16,6 +16,7 @@ const getConsignmentDetail = async (consignmentId) => {
             p.Original_price AS Original_Price,
             p.Sale_price AS Sale_price,
             p.Status AS Product_Status,
+            p.Image AS Product_Image,
 
             b.Brand_name AS Brand_Name,
             pt.Product_type_name AS Product_Type_Name,
@@ -57,6 +58,7 @@ const getConsignmentDetail = async (consignmentId) => {
                 Original_Price: row.Original_Price,
                 Sale_price : row.Sale_price,
                 Product_Status: row.Product_Status,
+                Product_Image: row.Product_Image,
                 Brand_Name: row.Brand_Name,
                 Product_Type_Name: row.Product_Type_Name,
                 Quantity: row.Quantity,

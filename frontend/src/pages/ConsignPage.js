@@ -40,7 +40,7 @@ const ConsignmentPage = () => {
 
     // Hàm xử lý khi ảnh bị lỗi
     const handleImageError = (e) => {
-        e.target.src = "https://via.placeholder.com/60?text=No+Image";
+        e.target.src = "../Images/default.png";
     };
 
     return (
@@ -102,7 +102,8 @@ const ConsignmentPage = () => {
                                                             <th className="text-nowrap text-uppercase small fw-bold">Category</th>
                                                             <th className="text-nowrap text-uppercase small fw-bold">Product</th>
                                                             <th className="text-nowrap text-uppercase small fw-bold text-end">Quantity</th>
-                                                            <th className="text-nowrap text-uppercase small fw-bold text-end">Price</th>
+                                                            <th className="text-nowrap text-uppercase small fw-bold text-end">Original Price</th>
+                                                            <th className="text-nowrap text-uppercase small fw-bold text-end">Sale Price</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -124,6 +125,11 @@ const ConsignmentPage = () => {
                                                                     </span>
                                                                 </td>
                                                                 <td className="text-end">{product.Quantity}</td>
+                                                                <td className="text-end">
+                                                                    <span className="text-decoration-line-through text-muted">
+                                                                        {product.Original_price.toLocaleString()} VND
+                                                                    </span>
+                                                                </td>
                                                                 <td className="text-end fw-bold text-success">{product.Sale_price.toLocaleString()} VND</td>
                                                             </tr>
                                                         ))}
@@ -131,15 +137,17 @@ const ConsignmentPage = () => {
                                                 </table>
                                             </div>
                                         </div>
-                                        <div className="card-footer bg-white border-0 text-end">
-                                            <Link
-                                                to={`/detailConsign/${ticket.TicketID}`}
-                                                className="btn btn-primary btn-sm px-4"
-                                            >
-                                                <i className="bi bi-eye-fill me-2"></i>
-                                                View Details
-                                            </Link>
-                                        </div>
+                                        {ticket.Status !== "Rejected" && (
+                                            <div className="card-footer bg-white border-0 text-end">
+                                                <Link
+                                                    to={`/detailConsign/${ticket.TicketID}`}
+                                                    className="btn btn-primary btn-sm px-4"
+                                                >
+                                                    <i className="bi bi-eye-fill me-2"></i>
+                                                    View Details
+                                                </Link>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}

@@ -1,25 +1,48 @@
 const db = require("../config/db");
 
 const updateConsignment = async (productId, consignmentId, updatedData) => {
+    // Destructure với giá trị mặc định
     const {
+        Product_name = null,
+        Brand_name = null,
+        Product_Type_Name = null,
+        Original_price = null,
+        Consignment_price = null,
+        Sale_price = null,
+        Quantity = null
+    } = updatedData || {};
+
+    console.log("Received data:", {
         Product_name,
         Brand_name,
-        Product_type_name,
+        Product_Type_Name,
         Original_price,
         Consignment_price,
         Sale_price,
-        Quantity,
-    } = updatedData;
+        Quantity
+    });
 
-    // Kiểm tra thông tin đầu vào
-    if (
-        !Product_name || !Brand_name || !Product_type_name ||
-        Original_price == null || Consignment_price == null || Sale_price == null ||
-        Quantity == null
-    ) {
-        throw new Error("Thiếu thông tin cần thiết để cập nhật");
+    // Kiểm tra bắt buộc chi tiết
+    const requiredFields = {
+        'Product_name': typeof Product_name === 'string',
+        'Brand_name': typeof Brand_name === 'string',
+        'Product_Type_Name': typeof Product_Type_Name === 'string',
+        'Original_price': typeof Original_price === 'number' && !isNaN(Original_price),
+        'Consignment_price': typeof Consignment_price === 'number' && !isNaN(Consignment_price),
+        'Sale_price': typeof Sale_price === 'number' && !isNaN(Sale_price),
+        'Quantity': typeof Quantity === 'number' && Quantity > 0
+    };
+
+    const missingFields = Object.entries(requiredFields)
+        .filter(([_, isValid]) => !isValid)
+        .map(([field]) => field);
+
+    if (missingFields.length > 0) {
+        console.error("Missing/invalid fields:", missingFields);
+        throw new Error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
     }
 
+    
     // Bắt đầu transaction
     const connection = await db.getConnection();
     await connection.beginTransaction();
@@ -32,8 +55,13 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
         );
         const [typeResults] = await connection.execute(
             "SELECT ID FROM TH_Product_Type WHERE Product_type_name = ?", 
-            [Product_type_name]
+            [Product_Type_Name]
         );
+        
+        if (typeResults.length === 0) {
+            console.error(`Không tìm thấy Product Type: ${Product_Type_Name}`);
+            throw new Error(`Loại sản phẩm "${Product_Type_Name}" không tồn tại`);
+        }
 
         if (brandResults.length === 0 || typeResults.length === 0) {
             throw new Error("Brand hoặc Product Type không tồn tại");

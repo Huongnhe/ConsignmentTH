@@ -25,7 +25,6 @@ const CreateConsign = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const navigate = useNavigate();
 
-  // Sử dụng ConsignContext
   const { createConsign } = useContext(ConsignContext);
 
   const handleChange = (e) => {
@@ -37,14 +36,27 @@ const CreateConsign = () => {
     const file = e.target.files[0];
     if (file) {
       setProductData({ ...productData, Image: file });
-
-      // Tạo preview cho ảnh
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Hàm xóa toàn bộ dữ liệu trong form nhập liệu
+  const handleClearForm = () => {
+    setProductData({
+      Product_name: "",
+      Original_price: "",
+      Sale_price: "",
+      Brand_name: "",
+      Product_type_name: "",
+      Quantity: "",
+      Image: null,
+    });
+    setImagePreview(null);
+    setError(null);
   };
 
   const handleAddProduct = () => {
@@ -71,8 +83,8 @@ const CreateConsign = () => {
       return;
     }
 
-    if (parseFloat(Sale_price) > parseFloat(Original_price)) {
-      setError("Sale price cannot be higher than original price");
+    if (parseFloat(Sale_price) < parseFloat(Original_price)) {
+      setError("Sale price cannot be lower than original price");
       return;
     }
 
@@ -89,20 +101,15 @@ const CreateConsign = () => {
     };
 
     setAddedProducts([...addedProducts, newProduct]);
-
-    // Reset form và preview ảnh
-    setProductData({
-      Product_name: "",
-      Original_price: "",
-      Sale_price: "",
-      Brand_name: "",
-      Product_type_name: "",
-      Quantity: "",
-      Image: null,
-    });
-    setImagePreview(null);
-    setError(null);
+    handleClearForm(); // Xóa form sau khi thêm sản phẩm
   };
+
+  const handleRemoveProduct = (index) => {
+    const updatedProducts = [...addedProducts];
+    updatedProducts.splice(index, 1);
+    setAddedProducts(updatedProducts);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -115,13 +122,12 @@ const CreateConsign = () => {
     setError(null);
   
     try {
-
       const productsWithFileNames = addedProducts.map((product) => {
         let imageName = null;
         if (product.Image instanceof File) {
           imageName = `../Images/${product.Image.name}`;
         } else {
-          imageName = product.Image; // Nếu đã là tên hoặc URL
+          imageName = product.Image; 
         }
   
         return {
@@ -139,7 +145,6 @@ const CreateConsign = () => {
   
       const payload = {
         productList: productsWithFileNames,
-        // Thêm các trường khác nếu cần
       };
   
       const response = await createConsign(payload);
@@ -153,7 +158,6 @@ const CreateConsign = () => {
       setLoading(false);
     }
   };
-  
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
@@ -253,7 +257,7 @@ const CreateConsign = () => {
                     name="Sale_price"
                     value={productData.Sale_price}
                     onChange={handleChange}
-                    placeholder="e.g. 1,800,000"
+                    placeholder="e.g. 2,800,000"
                     min="0"
                     style={{ borderColor: "#d1d5db", backgroundColor: "#f3f4f6" }}
                   />
@@ -321,19 +325,34 @@ const CreateConsign = () => {
               </div>
 
               <div className="d-flex justify-content-between mt-4">
-                <button
-                  type="button"
-                  className="btn px-4 py-2"
-                  onClick={handleAddProduct}
-                  style={{
-                    backgroundColor: "#a7f3d0",
-                    borderColor: "#6ee7b7",
-                    color: "#065f46",
-                  }}
-                >
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Add Product
-                </button>
+                <div>
+                  <button
+                    type="button"
+                    className="btn px-4 py-2 me-2"
+                    onClick={handleClearForm} // Nút xóa dữ liệu form
+                    style={{
+                      backgroundColor: "#fecaca",
+                      borderColor: "#f87171",
+                      color: "#991b1b",
+                    }}
+                  >
+                    <i className="bi bi-trash me-2"></i>
+                    Clear Form
+                  </button>
+                  <button
+                    type="button"
+                    className="btn px-4 py-2"
+                    onClick={handleAddProduct}
+                    style={{
+                      backgroundColor: "#a7f3d0",
+                      borderColor: "#6ee7b7",
+                      color: "#065f46",
+                    }}
+                  >
+                    <i className="bi bi-plus-circle me-2"></i>
+                    Add Product
+                  </button>
+                </div>
                 <button
                   type="submit"
                   className="btn px-4 py-2"
@@ -365,10 +384,19 @@ const CreateConsign = () => {
 
             {addedProducts.length > 0 && (
               <div className="mt-5">
-                <h5 className="mb-3" style={{ color: "#065f46" }}>
-                  <i className="bi bi-check-circle-fill me-2"></i>
-                  Added Products
-                </h5>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 style={{ color: "#065f46" }}>
+                    <i className="bi bi-check-circle-fill me-2"></i>
+                    Added Products
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => setAddedProducts([])} // Xóa toàn bộ sản phẩm đã thêm
+                  >
+                    <i className="bi bi-trash me-1"></i>Clear All
+                  </button>
+                </div>
                 <div className="table-responsive">
                   <table
                     className="table table-hover align-middle"
@@ -389,6 +417,7 @@ const CreateConsign = () => {
                         <th className="text-end" style={{ color: "#065f46" }}>
                           Sale Price
                         </th>
+                        <th style={{ color: "#065f46" }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -426,6 +455,15 @@ const CreateConsign = () => {
                             style={{ color: "#065f46" }}
                           >
                             {item.Sale_price.toLocaleString()} VND
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleRemoveProduct(index)}
+                            >
+                              <i className="bi bi-trash"></i> Remove
+                            </button>
                           </td>
                         </tr>
                       ))}
