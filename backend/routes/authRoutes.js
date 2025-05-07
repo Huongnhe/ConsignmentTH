@@ -20,9 +20,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // Giới hạn 5MB
+  limits: { fileSize: 100 * 1024 * 1024 } // Giới hạn 5MB
 });
 
+
+// Các route của bạn...
 module.exports = upload;
 //Controller cho admin
 const {
@@ -33,7 +35,7 @@ const {
     rejectConsignmentTicket
 } = require("../controllers/adminConsignController");
 
-const router = express.Router();
+const router = express.Router({limit: '50mb'});
 
 // Đăng ký và đăng nhập
 router.post("/register", register);

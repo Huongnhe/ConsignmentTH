@@ -103,63 +103,67 @@ const CreateConsign = () => {
     setImagePreview(null);
     setError(null);
   };
-
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (addedProducts.length === 0) {
       setError("Please add at least one product before submitting.");
       return;
     }
-
+  
     setLoading(true);
     setError(null);
-
+  
     try {
-      // Chuẩn bị dữ liệu sản phẩm theo định dạng backend mong đợi
-      const productList = addedProducts.map((product) => ({
-        Product_name: product.Product_name,
-        Original_price: product.Original_price,
-        Sale_price: product.Sale_price,
-        Brand_name: product.Brand_name,
-        Product_type_name: product.Product_type_name,
-        Quantity: product.details.Quantity,
-      }));
-
-      // Tạo FormData và thêm dữ liệu
-      const formData = new FormData();
-      formData.append("productList", JSON.stringify(productList));
-
-      // Thêm từng ảnh vào FormData
-      addedProducts.forEach((product) => {
-        formData.append(`images`, product.Image);
-      });
-
-      console.log("FormData content:");
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
-        
-      // Sử dụng hàm createConsign từ Context thay vì gọi API trực tiếp
-      const response = await createConsign(formData);
+      // Chuyển đổi tất cả ảnh sang base64
+      const productsWithBase64Images = await Promise.all(
+        addedProducts.map(async (product) => {
+          let imageBase64 = null;
+          if (product.Image instanceof File) {
+            imageBase64 = await fileToBase64(product.Image);
+          } else {
+            imageBase64 = product.Image; // Nếu đã là base64 hoặc URL
+          }
+  
+          return {
+            Product_name: product.Product_name,
+            Original_price: product.Original_price,
+            Sale_price: product.Sale_price,
+            Brand_name: product.Brand_name,
+            Product_type_name: product.Product_type_name,
+            details: {
+              Quantity: product.details.Quantity,
+            },
+            Image: imageBase64,
+          };
+        })
+      );
+  
+      // Tạo payload JSON
+      const payload = {
+        productList: productsWithBase64Images,
+        // Có thể thêm các trường khác nếu cần
+      };
+  
+      // Gọi API với dữ liệu JSON
+      const response = await createConsign(payload);
+      
       setSuccessMessage(response.message || "Consignment created successfully!");
       setShowSuccessModal(true);
     } catch (err) {
-      console.error("Error submitting form:", {
-        error: err,
-        response: err.response,
-        message: err.message,
-        stack: err.stack,
-      });
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "An error occurred. Please try again."
-      );
+      console.error("Error submitting form:", err);
+      setError(err.response?.data?.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
