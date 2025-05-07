@@ -53,15 +53,17 @@ export const getProductDetails = async (productId, token) => {
 };
 
 // Tạo đơn ký gửi
-export const createConsign = async (token, consignmentData) => {
+export const createConsignAPI = async (token, consignmentData) => {
     try {
         const response = await axios.post(`${API_URL}/CreateConsign`, consignmentData, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi tạo đơn ký gửi:", error.response?.data || error.message);
-        throw error;
+        console.error("Lỗi khi tạo đơn ký gửi:", error.response?.data);
+        throw error.response?.data || { error: "Lỗi khi tạo đơn ký gửi" };
     }
 };
 

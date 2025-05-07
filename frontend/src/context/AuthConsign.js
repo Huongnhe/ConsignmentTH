@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
-import { getUserProducts, deleteProductInConsignmentAPI } from "../api/api";
+import { getUserProducts, deleteProductInConsignmentAPI, createConsignAPI } from "../api/api";
 import { AuthContext } from "./AuthContext";
 
 export const ConsignContext = createContext();
@@ -44,25 +44,37 @@ export const ConsignProvider = ({ children }) => {
     };
 
     const createConsign = async (consignmentData) => {
-        const token = user?.token;
+        const token = localStorage.getItem("token");
         if (!token) {
-            setError("Người dùng chưa đăng nhập.");
-            return;
+          setError("Người dùng chưa đăng nhập.");
+          return { success: false, message: "User not authenticated" };
         }
-
+    
         setLoading(true);
         setError(null);
         try {
-            const newConsignment = await createConsign(token, consignmentData); // Tạo ký gửi mới
-            setProducts((prevProducts) => [...prevProducts, newConsignment]); // Thêm ký gửi vào danh sách
+          const response = await createConsignAPI(token, consignmentData);
+          setProducts((prevProducts) => [...prevProducts, response.data]);
+          return { 
+            success: true, 
+            message: response.data.message || "Consignment created successfully",
+            data: response.data
+          };
         } catch (error) {
-            console.error("Lỗi khi tạo ký gửi:", error);
-            setError("Không thể tạo ký gửi.");
+          console.error("Lỗi khi tạo ký gửi:", error);
+          const errorMessage = error.response?.data?.message || 
+                             error.message || 
+                             "Không thể tạo ký gửi";
+          setError(errorMessage);
+          return { 
+            success: false, 
+            message: errorMessage 
+          };
         } finally {
-            setLoading(false);
+          setLoading(false);
         }
-    };
-
+      };
+    
     const deleteProductInConsignment = async (consignmentId, productId) => {
         const token = localStorage.getItem("token");
         // console.log("Tokennhe:", user);

@@ -48,7 +48,14 @@ const AppContent = () => {
         <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} account="Manager" />} />
         <Route path="/home" element={<HomePageUser />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/CreateConsign" element={<CreateConsign />} />
+        <Route
+          path="/CreateConsign"
+          element={
+            <ConsignProvider>
+              <CreateConsign />
+            </ConsignProvider>
+          }
+        />
         <Route
           path="/consigns"
           element={
@@ -82,9 +89,11 @@ const App = () => {
     <AuthProvider>
       <AuthDetailProvider>
         <AdminConsignmentProvider>
-          <Router>
-            <AppContent />
-          </Router>
+          <ConsignProvider> {/* Di chuyển ConsignProvider lên đây để bao bọc toàn bộ ứng dụng */}
+            <Router>
+              <AppContent />
+            </Router>
+          </ConsignProvider>
         </AdminConsignmentProvider>
       </AuthDetailProvider>
     </AuthProvider>
