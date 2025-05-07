@@ -115,11 +115,11 @@ const CreateConsign = () => {
     setError(null);
   
     try {
-      // Lấy tên file thay vì chuyển sang base64
+
       const productsWithFileNames = addedProducts.map((product) => {
         let imageName = null;
         if (product.Image instanceof File) {
-          imageName = product.Image.name;
+          imageName = `../Images/${product.Image.name}`;
         } else {
           imageName = product.Image; // Nếu đã là tên hoặc URL
         }
