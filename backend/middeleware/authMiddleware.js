@@ -10,7 +10,6 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-
 const verifyToken = (req, res, next) => {
     const token = req.header("Authorization")?.split(" ")[1];
     console.log("Token nhận được từ request:", req.header("Authorization"));

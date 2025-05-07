@@ -87,6 +87,7 @@ const createConsignment = async (productList, userId) => {
         return {
             success: true,
             ticketId,
+            productList,
             message: "Tạo đơn ký gửi thành công"
         };
 

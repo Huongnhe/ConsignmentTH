@@ -106,17 +106,17 @@ const CreateConsign = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (addedProducts.length === 0) {
       setError("Please add at least one product before submitting.");
       return;
     }
-  
+
     setLoading(true);
     setError(null);
-  
+
     try {
-      // Chuẩn bị dữ liệu
+      // Chuẩn bị dữ liệu sản phẩm theo định dạng backend mong đợi
       const productList = addedProducts.map((product) => ({
         Product_name: product.Product_name,
         Original_price: product.Original_price,
@@ -125,40 +125,37 @@ const CreateConsign = () => {
         Product_type_name: product.Product_type_name,
         Quantity: product.details.Quantity,
       }));
-  
+
+      // Tạo FormData và thêm dữ liệu
       const formData = new FormData();
       formData.append("productList", JSON.stringify(productList));
-      
+
+      // Thêm từng ảnh vào FormData
       addedProducts.forEach((product) => {
         formData.append(`images`, product.Image);
       });
-      // Thêm hàm này để xem nội dung FormData
-      const showFormData = (formData) => {
-        const entries = {};
-        for (let [key, value] of formData.entries()) {
-          if (key === 'productList') {
-            entries[key] = JSON.parse(value);
-          } else {
-            entries[key] = value.name; // Chỉ lấy tên file cho ảnh
-          }
-        }
-        return entries;
-      };
 
-      // Sử dụng trong handleSubmit
-      alert(JSON.stringify(showFormData(formData), null, 2));
-      // Gọi hàm từ Context
-      const result = await createConsign(formData);
-      
-      if (result.success) {
-        setSuccessMessage(result.message);
-        setShowSuccessModal(true);
-      } else {
-        setError(result.message);
+      console.log("FormData content:");
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      setError(error.message || "An unexpected error occurred");
+        
+      // Sử dụng hàm createConsign từ Context thay vì gọi API trực tiếp
+      const response = await createConsign(formData);
+      setSuccessMessage(response.message || "Consignment created successfully!");
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error("Error submitting form:", {
+        error: err,
+        response: err.response,
+        message: err.message,
+        stack: err.stack,
+      });
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "An error occurred. Please try again."
+      );
     } finally {
       setLoading(false);
     }

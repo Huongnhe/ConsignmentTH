@@ -2,17 +2,9 @@ const { createConsignment } = require("../models/CreateConsignModel");
 
 const createConsignController = async (req, res) => {
     const userId = req.user?.id;
-    let productList;
-
+    const productList = req.body.productList;
     if (!userId) {
         return res.status(401).json({ error: "Bạn phải đăng nhập để thực hiện thao tác này" });
-    }
-
-    // Parse productList from FormData
-    if (req.body.productList) {
-        productList = JSON.parse(req.body.productList);
-    } else {
-        return res.status(400).json({ error: "Danh sách sản phẩm không hợp lệ hoặc trống" + " " + productList });
     }
     
     // Kiểm tra đầu vào là mảng và có ít nhất một sản phẩm
@@ -30,7 +22,8 @@ const createConsignController = async (req, res) => {
         const result = await createConsignment(productList, userId);
         res.status(201).json({
             message: result.message,
-            ticketId: result.ticketId
+            ticketId: result.ticketId,
+            productList : result.productList
         });
     } catch (error) {
         console.error("Lỗi khi tạo đơn ký gửi:", error);

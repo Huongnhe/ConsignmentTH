@@ -6,7 +6,24 @@ const { createConsignController } = require("../controllers/CreateConsignControl
 const { fetchConsignmentDetail } = require("../controllers/detailConsignController");
 const { updateConsignmentProduct } = require("../controllers/updateConsignmentProduct");
 const {deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
+const multer = require('multer');
+const path = require('path');
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // Giới hạn 5MB
+});
+
+module.exports = upload;
 //Controller cho admin
 const {
     fetchAllConsignmentTickets,
@@ -24,7 +41,7 @@ router.post("/login", login);
 
 // Người dùng
 router.post("/consigns", authenticateUser, fetchUserProducts);
-router.post("/CreateConsign", authenticateUser, createConsignController);
+router.post("/CreateConsign", authenticateUser, createConsignController,upload.array('images'));
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
 router.post('/consignmentUpdate/:consignmentId/products/:productId', authenticateUser, updateConsignmentProduct);
 router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
