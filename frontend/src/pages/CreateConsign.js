@@ -103,12 +103,6 @@ const CreateConsign = () => {
     setImagePreview(null);
     setError(null);
   };
-  const fileToBase64 = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-  });
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -121,39 +115,35 @@ const CreateConsign = () => {
     setError(null);
   
     try {
-      // Chuyển đổi tất cả ảnh sang base64
-      const productsWithBase64Images = await Promise.all(
-        addedProducts.map(async (product) => {
-          let imageBase64 = null;
-          if (product.Image instanceof File) {
-            imageBase64 = await fileToBase64(product.Image);
-          } else {
-            imageBase64 = product.Image; // Nếu đã là base64 hoặc URL
-          }
+      // Lấy tên file thay vì chuyển sang base64
+      const productsWithFileNames = addedProducts.map((product) => {
+        let imageName = null;
+        if (product.Image instanceof File) {
+          imageName = product.Image.name;
+        } else {
+          imageName = product.Image; // Nếu đã là tên hoặc URL
+        }
   
-          return {
-            Product_name: product.Product_name,
-            Original_price: product.Original_price,
-            Sale_price: product.Sale_price,
-            Brand_name: product.Brand_name,
-            Product_type_name: product.Product_type_name,
-            details: {
-              Quantity: product.details.Quantity,
-            },
-            Image: imageBase64,
-          };
-        })
-      );
+        return {
+          Product_name: product.Product_name,
+          Original_price: product.Original_price,
+          Sale_price: product.Sale_price,
+          Brand_name: product.Brand_name,
+          Product_type_name: product.Product_type_name,
+          details: {
+            Quantity: product.details.Quantity,
+          },
+          Image: imageName,
+        };
+      });
   
-      // Tạo payload JSON
       const payload = {
-        productList: productsWithBase64Images,
-        // Có thể thêm các trường khác nếu cần
+        productList: productsWithFileNames,
+        // Thêm các trường khác nếu cần
       };
   
-      // Gọi API với dữ liệu JSON
       const response = await createConsign(payload);
-      
+  
       setSuccessMessage(response.message || "Consignment created successfully!");
       setShowSuccessModal(true);
     } catch (err) {
@@ -309,7 +299,7 @@ const CreateConsign = () => {
                   <input
                     type="file"
                     className="form-control"
-                    accept="image/*"
+                    accept="Images/*"
                     onChange={handleImageChange}
                     style={{ borderColor: "#d1d5db", backgroundColor: "#f3f4f6" }}
                   />

@@ -57,11 +57,16 @@ export const ConsignProvider = ({ children }) => {
           setProducts((prevProducts) => [...prevProducts, response.data]);
           return { 
             success: true, 
-            message: response.data.message || "Consignment created successfully",
+            message: response.data?.message || "Consignment created successfully",
             data: response.data
           };
         } catch (error) {
-            console.error("Lỗi khi tạo ký gửi:", error + " " + token + " "+ consignmentData);
+            console.error("Lỗi khi tạo ký gửi:", {
+                error,
+                token,
+                consignmentData
+              });
+              
           const errorMessage = error.response?.data?.message || 
                              error.message || 
                              "Không thể tạo ký gửi";
