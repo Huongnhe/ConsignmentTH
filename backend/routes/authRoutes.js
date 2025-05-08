@@ -6,27 +6,8 @@ const { createConsignController } = require("../controllers/CreateConsignControl
 const { fetchConsignmentDetail } = require("../controllers/detailConsignController");
 const { updateConsignmentProduct } = require("../controllers/updateConsignmentProduct");
 const {deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
-const multer = require('multer');
-const path = require('path');
 const saleController = require("../controllers/orderConsignController");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, '../Images/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 100 * 1024 * 1024 } // Giới hạn 5MB
-});
-
-
-// Các route của bạn...
-module.exports = upload;
 //Controller cho admin
 const {
     fetchAllConsignmentTickets,
@@ -34,43 +15,31 @@ const {
     fetchReviewedConsignmentTickets,
     approveConsignmentTicket,
     rejectConsignmentTicket
-} = require("../controllers/adminConsignController");
-
-const router = express.Router({limit: '50mb'});
-
-// Đăng ký và đăng nhập
-router.post("/register", register);
-router.post("/login", login);
-
-// Người dùng
-router.post("/consigns", authenticateUser, fetchUserProducts);
-router.post("/CreateConsign", authenticateUser, createConsignController,upload.array('images'));
-router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
-router.post('/consignmentUpdate/:consignmentId/products/:productId', authenticateUser, updateConsignmentProduct);
-router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
-router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
-//Admin
-router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
-router.post("/admin/consignments/pending", authenticateUser, fetchPendingConsignmentTickets);
-router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsignmentTickets);
-router.put("/admin/approve/:ticketID", approveConsignmentTicket);
-router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
-
-router.get("/", (req, res) => {
-    res.redirect("/login");
-});
-
-router.get("/sale/products/search", authenticateUser, saleController.searchProducts);
-
-// Tạo đơn hàng mới
-router.post("/sale/orders", authenticateUser, saleController.createOrder);
-
-// Xem hóa đơn
-router.get("/sale/orders/:orderId/invoice", authenticateUser, saleController.getInvoice);
-
-// Route mặc định
-router.get("/", (req, res) => {
-    res.redirect("/login");
-});
-
-module.exports = router;
+  } = require("../controllers/adminConsignController");
+  
+  const router = express.Router({limit: '50mb'});
+  
+  // Đăng ký và đăng nhập
+  router.post("/register", register);
+  router.post("/login", login);
+  
+  // Người dùng
+  router.post("/consigns", authenticateUser, fetchUserProducts);
+  router.post("/CreateConsign", authenticateUser, createConsignController);
+  router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
+  router.post('/consignmentUpdate/:consignmentId/products/:productId', authenticateUser, updateConsignmentProduct);
+  router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
+  router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
+  //Admin
+  router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
+  router.post("/admin/consignments/pending", authenticateUser, fetchPendingConsignmentTickets);
+  router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsignmentTickets);
+  router.put("/admin/approve/:ticketID", approveConsignmentTicket);
+  router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
+  
+  //Staff
+  router.post("/staff/products/search", authenticateUser, saleController.searchProducts);
+  router.post("/staff/orders", authenticateUser, saleController.createOrder);
+  router.post("/staff/orders/:orderId/invoice", authenticateUser, saleController.getInvoice);
+    
+  module.exports = router;

@@ -31,7 +31,7 @@ const LoginPage = () => {
       if (data && data.Account === "Manager") {
         navigate("/admin");
       } else if (data && data.Account === "Staff") {
-        navigate("/");
+        navigate("/staff/order");
       } else if (data && data.Account === "Customer") {
         navigate("/home");
       }

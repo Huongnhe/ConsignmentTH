@@ -1,4 +1,7 @@
 import { createContext, useState, useEffect } from "react";
+import {
+  loginUser,
+} from "../api/api";
 
 export const AuthContext = createContext();
 
@@ -22,31 +25,21 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const res = await fetch("http://localhost:8000/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password}),
-                
-            });
-            console.log("Dữ liệu gửi đi:", { email, password });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || "Đăng nhập thất bại!");
+            const data = await loginUser(email, password);
+            console.log("Phản hồi từ API:", data);
+            
+            if (data.token && data.user) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("user", JSON.stringify(data.user));
+                setUser(data.user);
+                return data.user;
+            } else {
+                throw new Error("Đăng nhập thất bại: Dữ liệu không hợp lệ từ server");
             }
-
-            const data = await res.json();
-            console.log("Phản hồi từ API aaaaaaaaaaaa:", data);
-            localStorage.setItem("token", data.token);
-            
-            localStorage.setItem("user", JSON.stringify(data.user));
-            
-            setUser(data.user);
-            return data.user;
         } catch (error) {
-            alert(error.message);
+            console.error("Lỗi khi đăng nhập:", error);
+            alert(error.message || "Đăng nhập thất bại!");
+            throw error; // Ném lỗi để component có thể bắt và xử lý
         }
     };
 

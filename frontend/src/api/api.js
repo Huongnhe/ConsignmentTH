@@ -254,3 +254,27 @@ export const updateConsignmentAPI = async (token, consignmentId, productId, upda
         throw error;
     }
 };
+
+export const searchOrderAPI = async (token, keyword) => {
+    try {
+        const response = await axios.post(
+            `${API_URL}/staff/products/search?keyword=${keyword}`,
+            {},
+            
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        
+        console.log("Phản hồi từ API khi tìm đơn hàng:", response.data);
+        console.log("Token dùng để gọi API:", token);
+        return response.data;
+        
+
+    } catch (error) {
+        console.error("Lỗi khi tìm đơn hàng:", error.response?.data || error.message);
+        throw error;
+    }
+};
