@@ -16,7 +16,7 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { ConsignProvider } from "./context/AuthConsign";
 import { AuthDetailProvider } from "./context/AuthDetail";
 import { AdminConsignmentProvider } from "./context/AuthAdminConsign";
-import { OrderSearchProvider } from "./context/AuthOrder";
+import { ProductSearchProvider } from "./context/AuthOrder";
 
 const PrivateRoute = ({ element, account }) => {
   const { user } = useContext(AuthContext);
@@ -54,25 +54,22 @@ const AppContent = () => {
         <Route path="/home" element={<HomePageUser />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
-            path="/staff/order"
-            element={
-              <PrivateRoute 
-                element={
-                  <OrderSearchProvider>
-                    <OrderPage />
-                  </OrderSearchProvider>
-                } 
-                account="Staff" 
-              />
-            }
-          />
+          path="/admin/orders"
+          element={
+            <PrivateRoute 
+              element={
+                <ProductSearchProvider>
+                  <OrderPage />
+                </ProductSearchProvider>
+              } 
+              account="Manager" 
+            />
+          }
+        />
         <Route
-        
           path="/CreateConsign"
           element={
-            <ConsignProvider>
-              <CreateConsign />
-            </ConsignProvider>
+            <CreateConsign />
           }
         />
         <Route
@@ -81,29 +78,21 @@ const AppContent = () => {
             loading ? (
               <div>Loading...</div>
             ) : (
-              <ConsignProvider>
-                <ConsignPage />
-              </ConsignProvider>
+              <ConsignPage />
             )
           }
         />
         <Route
           path="/detailConsign/:id"
           element={
-            <ConsignProvider>
-              <ConsignDetailPage />
-            </ConsignProvider>
+            <ConsignDetailPage />
           }
         />
         <Route 
           path="/admin/consignments" 
           element={
             <PrivateRoute 
-              element={
-                <AdminConsignmentProvider>
-                  <AdminConsign />
-                </AdminConsignmentProvider>
-              } 
+              element={<AdminConsign />} 
               account="Manager" 
             />
           } 
@@ -117,19 +106,19 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AuthDetailProvider>
-        <AdminConsignmentProvider>
-          <ConsignProvider>
-            <OrderSearchProvider>
-              <Router>
+    <Router>
+      <AuthProvider>
+        <AuthDetailProvider>
+          <AdminConsignmentProvider>
+            <ConsignProvider>
+              <ProductSearchProvider>
                 <AppContent />
-              </Router>
-            </OrderSearchProvider>
-          </ConsignProvider>
-        </AdminConsignmentProvider>
-      </AuthDetailProvider>
-    </AuthProvider>
+              </ProductSearchProvider>
+            </ConsignProvider>
+          </AdminConsignmentProvider>
+        </AuthDetailProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 

@@ -1,155 +1,119 @@
-import React, { useState } from 'react';
-import { useOrderSearch } from '../context/AuthOrder';
+import React, { useState, useEffect } from 'react';
+import { useProductSearch } from '../context/AuthOrder';
+import SidebarMenu from './MenuAdmin'; 
 
-function OrderPage() {
+function ProductSearchPage() {
     const {
         searchResults,
         loading,
         error,
         keyword,
-        searchOrders,
+        searchProducts,
         clearSearch
-    } = useOrderSearch();
+    } = useProductSearch();
 
     const [searchInput, setSearchInput] = useState('');
-    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedProducts, setSelectedProducts] = useState([]);
+    const [customerInfo, setCustomerInfo] = useState({
+        name: '',
+        phone: '',
+        address: ''
+    });
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchInput.trim()) return;
+    // Tìm kiếm real-time với debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchInput.trim().length > 0) {
+                searchProducts(searchInput);
+            } else {
+                clearSearch();
+            }
+        }, 300);
 
-        await searchOrders(searchInput);
-        setShowSuggestions(false);
-    };
+        return () => clearTimeout(timer);
+    }, [searchInput]);
 
     const handleInputChange = (e) => {
         const value = e.target.value;
         setSearchInput(value);
-        setShowSuggestions(value.length > 0);
     };
 
-    const handleSuggestionClick = (suggestion) => {
-        setSearchInput(suggestion);
-        setShowSuggestions(false);
-        searchOrders(suggestion);
+    const handleAddToOrder = (product) => {
+        if (!selectedProducts.some(p => p.ID === product.ID)) {
+            setSelectedProducts([...selectedProducts, product]);
+        }
     };
 
-    // Lọc gợi ý từ kết quả tìm kiếm trước đó
-    const filteredSuggestions = searchResults
-        .filter(order => 
-            typeof order.customer_name === 'string' && 
-            searchInput &&
-            order.customer_name.toLowerCase().includes(searchInput.toLowerCase())
-        .slice(0, 5));// Giới hạn 5 gợi ý
+    const handleRemoveProduct = (productId) => {
+        setSelectedProducts(selectedProducts.filter(p => p.ID !== productId));
+    };
+
+    const handleCustomerInfoChange = (e) => {
+        const { name, value } = e.target;
+        setCustomerInfo(prev => ({ ...prev, [name]: value }));
+    };
+
+    const getStatusBadge = (status) => {
+        switch(status) {
+            case 'Received':
+                return { class: 'bg-success', text: 'Có sẵn' };
+            case 'Consigned':
+                return { class: 'bg-warning text-dark', text: 'Đang ký gửi' };
+            case 'Sold':
+                return { class: 'bg-secondary', text: 'Đã bán' };
+            default:
+                return { class: 'bg-secondary', text: 'Không xác định' };
+        }
+    };
 
     return (
-        <div className="container mt-5">
-            <div className="card shadow p-4">
-                <h3 className="mb-3">Tìm kiếm đơn hàng</h3>
-                <form onSubmit={handleSearch} className="mb-3 position-relative">
-                    <div className="input-group">
-                        <input
-                            type="text"
-                            className="form-control"
-                            value={searchInput}
-                            onChange={handleInputChange}
-                            placeholder="Nhập mã đơn hàng, tên khách hàng..."
-                        />
-                        <button className="btn btn-primary" type="submit" disabled={loading}>
-                            {loading ? (
-                                <>
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Đang tìm...
-                                </>
-                            ) : 'Tìm kiếm'}
-                        </button>
-                        <button className="btn btn-secondary" type="button" onClick={clearSearch}>
-                            Xóa
-                        </button>
-                    </div>
-                    
-                    {showSuggestions && filteredSuggestions.length > 0 && (
-                        <div className="list-group position-absolute w-100 mt-1" style={{ zIndex: 1000 }}>
-                            {filteredSuggestions.map((order) => (
-                                <button
-                                    key={order.id}
-                                    type="button"
-                                    className="list-group-item list-group-item-action text-start"
-                                    onClick={() => handleSuggestionClick(order.customer_name || order.guest_name)}
-                                >
-                                    {order.customer_name || order.guest_name} - Đơn #{order.id}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </form>
-
-                {error && (
-                    <div className="alert alert-danger">
-                        <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                        {error}
-                    </div>
-                )}
-
-                {searchResults.length > 0 && (
-                    <div className="mt-4">
-                        <h5 className="mb-3">
-                            <i className="bi bi-search me-2"></i>
-                            Kết quả tìm kiếm cho: <strong>"{keyword}"</strong>
-                        </h5>
-                        
-                        {searchResults.map((order) => (
-                            <div key={order.id} className="card mb-4">
-                                <div className="card-header bg-light">
-                                    <div className="d-flex justify-content-between align-items-center">
-                                        <h5 className="mb-0">
-                                            Đơn hàng #{order.id} - 
-                                            <span className="ms-2">
-                                                {order.customer_name 
-                                                    ? `Khách hàng: ${order.customer_name}`
-                                                    : `Khách vãng lai: ${order.guest_name || 'Không tên'}`}
-                                            </span>
-                                        </h5>
-                                        <span className={`badge ${getStatusBadgeClass(order.Order_status)}`}>
-                                            {order.Order_status}
-                                        </span>
-                                    </div>
+        <div style={{ display: 'flex' }}>
+            <SidebarMenu />
+            
+            <div className="container-fluid mt-3" style={{ marginLeft: '250px', padding: '20px' }}>
+                <div className="row">
+                    {/* Cột trái - Sản phẩm */}
+                    <div className="col-md-8">
+                        <div className="card shadow mb-4">
+                            <div className="card-header bg-primary text-white">
+                                <h4 className="mb-0">Tìm kiếm sản phẩm</h4>
+                            </div>
+                            <div className="card-body">
+                                <div className="position-relative">
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-lg"
+                                        value={searchInput}
+                                        onChange={handleInputChange}
+                                        placeholder="Nhập tên sản phẩm..."
+                                        autoFocus
+                                    />
                                 </div>
-                                <div className="card-body">
-                                    <div className="row mb-3">
-                                        <div className="col-md-6">
-                                            <p><strong>Ngày tạo:</strong> {new Date(order.created_at).toLocaleDateString()}</p>
-                                            <p><strong>Tổng giá trị:</strong> {formatCurrency(order.Total_value)}</p>
-                                        </div>
-                                        <div className="col-md-6">
-                                            {order.customer_email && (
-                                                <p><strong>Email:</strong> {order.customer_email}</p>
-                                            )}
-                                            {(order.guest_phone || order.guest_address) && (
-                                                <>
-                                                    {order.guest_phone && <p><strong>Điện thoại:</strong> {order.guest_phone}</p>}
-                                                    {order.guest_address && <p><strong>Địa chỉ:</strong> {order.guest_address}</p>}
-                                                </>
-                                            )}
-                                        </div>
+
+                                {error && (
+                                    <div className="alert alert-danger mt-3">
+                                        <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                        {error}
                                     </div>
-                                    
-                                    <h6 className="mt-3 mb-3">Sản phẩm trong đơn hàng:</h6>
+                                )}
+
+                                <div className="mt-4">
                                     <div className="table-responsive">
-                                        <table className="table table-bordered table-hover">
+                                        <table className="table table-hover">
                                             <thead className="table-light">
                                                 <tr>
-                                                    <th>STT</th>
                                                     <th>Sản phẩm</th>
                                                     <th>Thương hiệu</th>
-                                                    <th>Đơn giá</th>
+                                                    <th>Loại</th>
+                                                    <th>Trạng thái</th>
+                                                    <th>Thao tác</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {order.products && order.products.length > 0 ? (
-                                                    order.products.map((product, index) => (
-                                                        <tr key={product.Product_id}>
-                                                            <td>{index + 1}</td>
+                                                {searchResults.map((product) => {
+                                                    const statusBadge = getStatusBadge(product.Status);
+                                                    return (
+                                                        <tr key={product.ID}>
                                                             <td>
                                                                 <div className="d-flex align-items-center">
                                                                     {product.Image && (
@@ -157,55 +121,139 @@ function OrderPage() {
                                                                             src={product.Image} 
                                                                             alt={product.Product_name}
                                                                             className="img-thumbnail me-3"
-                                                                            style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                                                                            style={{ width: '60px', height: '60px' }}
                                                                         />
                                                                     )}
                                                                     <span>{product.Product_name}</span>
                                                                 </div>
                                                             </td>
                                                             <td>{product.Brand_name}</td>
-                                                            <td>{formatCurrency(product.Unit_price)}</td>
+                                                            <td>{product.Product_type_name}</td>
+                                                            <td>
+                                                                <span className={`badge ${statusBadge.class}`}>
+                                                                    {statusBadge.text}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <button 
+                                                                    className="btn btn-sm btn-primary"
+                                                                    onClick={() => handleAddToOrder(product)}
+                                                                    disabled={product.Status !== 'Received'}
+                                                                >
+                                                                    Thêm
+                                                                </button>
+                                                            </td>
                                                         </tr>
-                                                    ))
-                                                ) : (
-                                                    <tr>
-                                                        <td colSpan="4" className="text-center text-muted">
-                                                            Không có thông tin sản phẩm
-                                                        </td>
-                                                    </tr>
-                                                )}
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        </div>
                     </div>
-                )}
+
+                    {/* Cột phải - Thông tin khách hàng và đơn hàng */}
+                    <div className="col-md-4">
+                        <div className="card shadow sticky-top" style={{ top: '20px' }}>
+                            <div className="card-header bg-info text-white">
+                                <h4 className="mb-0">Thông tin đơn hàng</h4>
+                            </div>
+                            <div className="card-body">
+                                <div className="mb-4">
+                                    <h5>Thông tin khách hàng</h5>
+                                    <div className="mb-3">
+                                        <label className="form-label">Họ tên</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            name="name"
+                                            value={customerInfo.name}
+                                            onChange={handleCustomerInfoChange}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Số điện thoại</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            name="phone"
+                                            value={customerInfo.phone}
+                                            onChange={handleCustomerInfoChange}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Địa chỉ</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            name="address"
+                                            value={customerInfo.address}
+                                            onChange={handleCustomerInfoChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mb-4">
+                                    <h5>Sản phẩm đã chọn ({selectedProducts.length})</h5>
+                                    {selectedProducts.length === 0 ? (
+                                        <div className="alert alert-warning">Chưa có sản phẩm nào</div>
+                                    ) : (
+                                        <div className="table-responsive">
+                                            <table className="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Sản phẩm</th>
+                                                        <th>Giá</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedProducts.map((product) => (
+                                                        <tr key={product.ID}>
+                                                            <td>{product.Product_name}</td>
+                                                            <td>{product.Price?.toLocaleString() || '0'} đ</td>
+                                                            <td className="text-end">
+                                                                <button 
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    onClick={() => handleRemoveProduct(product.ID)}
+                                                                >
+                                                                    Xóa
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="d-grid gap-2">
+                                    <button 
+                                        className="btn btn-success btn-lg"
+                                        disabled={selectedProducts.length === 0}
+                                    >
+                                        Tạo đơn hàng
+                                    </button>
+                                    <button 
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => {
+                                            setSelectedProducts([]);
+                                            setCustomerInfo({ name: '', phone: '', address: '' });
+                                        }}
+                                    >
+                                        Xóa tất cả
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
-// Hàm phụ trợ
-function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'Processing':
-            return 'bg-warning text-dark';
-        case 'Completed':
-            return 'bg-success';
-        case 'Cancelled':
-            return 'bg-danger';
-        default:
-            return 'bg-secondary';
-    }
-}
-
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND' 
-    }).format(amount || 0);
-}
-
-export default OrderPage;
+export default ProductSearchPage;

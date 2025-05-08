@@ -12,7 +12,7 @@ const HomePagePublic = () => {
       if (user.Account === "Manager") {
         navigate("/admin");
       } else {
-        navigate("/home");
+        navigate("/");
       }
     }
   }, [user, navigate]);

@@ -255,26 +255,23 @@ export const updateConsignmentAPI = async (token, consignmentId, productId, upda
     }
 };
 
-export const searchOrderAPI = async (token, keyword) => {
+export const searchProductsAPI = async (token, keyword) => {
     try {
-        const response = await axios.post(
-            `${API_URL}/staff/products/search?keyword=${keyword}`,
-            {},
-            
+        const response = await axios.get(
+            `${API_URL}/admin/products/search`,
             {
+                params: { keyword },
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             }
         );
         
-        console.log("Phản hồi từ API khi tìm đơn hàng:", response.data);
-        console.log("Token dùng để gọi API:", token);
+        console.log("Phản hồi từ API khi tìm sản phẩm:", response.data);
         return response.data;
-        
-
     } catch (error) {
-        console.error("Lỗi khi tìm đơn hàng:", error.response?.data || error.message);
-        throw error;
+        const errorMsg = error.response?.data?.message || error.message;
+        console.error("Lỗi khi tìm sản phẩm:", errorMsg);
+        throw new Error(errorMsg);
     }
 };

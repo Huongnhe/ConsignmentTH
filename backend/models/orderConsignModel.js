@@ -49,7 +49,7 @@ const saleModel = {
                 (Customer_id, Total_value, Quantity, Order_status, Customer_info_id) 
                 VALUES (?, ?, ?, 'Processing', ?)`,
                 [
-                    orderData.customerId || null, // Có thể là null nếu khách vãng lai
+                    orderData.customerId || null, 
                     orderData.totalValue,
                     orderData.totalQuantity,
                     customerInfoId

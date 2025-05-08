@@ -36,10 +36,8 @@ const {
   router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsignmentTickets);
   router.put("/admin/approve/:ticketID", approveConsignmentTicket);
   router.put("/admin/reject/:ticketID", rejectConsignmentTicket);
-  
-  //Staff
-  router.post("/staff/products/search", authenticateUser, saleController.searchProducts);
-  router.post("/staff/orders", authenticateUser, saleController.createOrder);
-  router.post("/staff/orders/:orderId/invoice", authenticateUser, saleController.getInvoice);
+  router.get("/admin/products/search", authenticateUser, saleController.searchProducts);
+  router.post("/admin/orders", authenticateUser, saleController.createOrder);
+  router.post("/admin/orders/:orderId/invoice", authenticateUser, saleController.getInvoice);
     
   module.exports = router;

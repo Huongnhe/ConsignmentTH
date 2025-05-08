@@ -1,10 +1,10 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import { searchOrderAPI } from "../api/api";
+import { searchProductsAPI } from "../api/api"; // Đổi tên import cho đúng
 import { AuthContext } from "./AuthContext";
 
-export const OrderContext = createContext();
+export const ProductSearchContext = createContext(); // Đổi tên context
 
-export const OrderSearchProvider = ({ children }) => {  
+export const ProductSearchProvider = ({ children }) => { // Đổi tên provider
     const { user } = useContext(AuthContext);
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export const OrderSearchProvider = ({ children }) => {
         }
     }, [user]);
 
-    const searchOrders = async (searchKeyword) => {
+    const searchProducts = async (searchKeyword) => { // Đổi tên hàm
         if (!searchKeyword?.trim()) {
             setError("Vui lòng nhập từ khóa tìm kiếm");
             return { success: false, message: "Search keyword is required" };
@@ -35,7 +35,7 @@ export const OrderSearchProvider = ({ children }) => {
         setKeyword(searchKeyword);
 
         try {
-            const results = await searchOrderAPI(token, searchKeyword);
+            const results = await searchProductsAPI(token, searchKeyword); // Gọi đúng API
             setSearchResults(results);
             setLastSearch(new Date()); 
             return { 
@@ -44,7 +44,7 @@ export const OrderSearchProvider = ({ children }) => {
                 data: results 
             };
         } catch (error) {
-            console.error("Search error:", { error, token, searchKeyword });
+            console.error("Search error:", error);
             
             const errorMessage = error.response?.data?.message || 
                                "Tìm kiếm thất bại. Vui lòng thử lại";
@@ -74,22 +74,22 @@ export const OrderSearchProvider = ({ children }) => {
         error,
         keyword,
         lastSearch,
-        searchOrders,
+        searchProducts, // Cập nhật tên hàm
         clearSearch,
         hasSearched: !!lastSearch
     };
 
     return (
-        <OrderContext.Provider value={value}>
+        <ProductSearchContext.Provider value={value}> {/* Đổi tên context */}
             {children}
-        </OrderContext.Provider>
+        </ProductSearchContext.Provider>
     );
 };
 
-export const useOrderSearch = () => {
-    const context = useContext(OrderContext);
+export const useProductSearch = () => { // Đổi tên hook
+    const context = useContext(ProductSearchContext); // Đổi tên context
     if (!context) {
-        throw new Error('useOrderSearch phải được sử dụng bên trong OrderProvider');
+        throw new Error('useProductSearch phải được sử dụng bên trong ProductSearchProvider');
     }
     return context;
 };

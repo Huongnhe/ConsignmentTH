@@ -52,7 +52,7 @@ class ConsignmentTest:
                 "original_price": "1000000",
                 "sale_price": "1800000",
                 "quantity": "1",
-                "image_path": os.path.abspath("test_images/product1.png")
+                "image_path": os.path.abspath("test_images/hình ảnh.png")
             },
             {
                 "case_name": "Case 2 - Thiếu tên sản phẩm",
