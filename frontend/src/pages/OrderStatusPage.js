@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useProductSearch } from '../context/AuthOrder';
 import { createOrdersAPI, getInvoiceAPI } from '../api/api';
 import { useNavigate } from 'react-router-dom';
@@ -30,18 +30,34 @@ function ProductSearchPage() {
         type: ''
     });
     const [orderIdInput, setOrderIdInput] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchInput.trim().length > 0) {
                 searchProducts(searchInput);
+                setShowSuggestions(true);
             } else {
                 clearSearch();
+                setShowSuggestions(false);
             }
         }, 300);
         return () => clearTimeout(timer);
     }, [searchInput]);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     const showAlert = (message, type = 'info', duration = 3000) => {
         setNotification({
@@ -61,12 +77,19 @@ function ProductSearchPage() {
         setSearchInput(e.target.value);
     };
 
-    const handleAddToOrder = (product) => {
+    const handleSelectProduct = (product) => {
+        // Only allow adding products with "Received" status
+        if (product.Status !== 'Received') {
+            showAlert('Chỉ có thể thêm sản phẩm có sẵn vào đơn hàng', 'warning');
+            return;
+        }
+
         if (!selectedProducts.some(p => p.ID === product.ID)) {
-            setSelectedProducts([...selectedProducts, product]);
+            const quantity = product.Consignment_quantity || 1;
+            setSelectedProducts([...selectedProducts, {...product, quantity}]);
             showAlert(`Đã thêm ${product.Product_name} vào đơn hàng`, 'success');
-        } else {
-            showAlert('Sản phẩm đã có trong đơn hàng', 'info');
+            setSearchInput('');
+            setShowSuggestions(false);
         }
     };
 
@@ -106,7 +129,8 @@ function ProductSearchPage() {
 
         const orderData = {
             products: selectedProducts.map(product => ({
-                productId: product.ID
+                productId: product.ID,
+                quantity: product.quantity || 1
             })),
             customerInfo: {
                 name: customerInfo.name,
@@ -183,6 +207,10 @@ function ProductSearchPage() {
         }
     };
 
+    const navigateToSoldOrders = () => {
+        navigate('/admin/sold-orders');
+    };
+
     const getStatusBadge = (status) => {
         switch(status) {
             case 'Received':
@@ -206,9 +234,16 @@ function ProductSearchPage() {
         }
     };
 
-    // Hàm helper để lấy giá đúng (Consignment_price nếu có, nếu không thì Sale_price)
     const getProductPrice = (product) => {
         return product.Consignment_price || product.Sale_price;
+    };
+
+    const calculateTotal = () => {
+        return selectedProducts.reduce((sum, product) => {
+            const price = parseFloat(getProductPrice(product)) || 0;
+            const quantity = product.quantity || 1;
+            return sum + (price * quantity);
+        }, 0);
     };
 
     return (
@@ -254,12 +289,16 @@ function ProductSearchPage() {
                                     <strong>Sản phẩm:</strong>
                                     <ul>
                                         {selectedProducts.map(product => (
-                                            <li key={product.ID}>{product.Product_name} - {parseFloat(getProductPrice(product)).toLocaleString()} đ</li>
+                                            <li key={product.ID}>
+                                                {product.Product_name} - 
+                                                {parseFloat(getProductPrice(product)).toLocaleString()} đ × 
+                                                {product.quantity || 1}
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Tổng cộng:</strong> {selectedProducts.reduce((sum, p) => sum + (parseFloat(getProductPrice(p)) || 0), 0).toLocaleString()} đ
+                                    <strong>Tổng cộng:</strong> {calculateTotal().toLocaleString()} đ
                                 </div>
                             </div>
                             <div className="modal-footer">
@@ -295,6 +334,12 @@ function ProductSearchPage() {
                     <div className="container-fluid">
                         <span className="navbar-brand">Quản lý đơn hàng</span>
                         <div className="d-flex">
+                            <button 
+                                className="btn btn-outline-success me-2" 
+                                onClick={navigateToSoldOrders}
+                            >
+                                Đơn hàng đã bán
+                            </button>
                             <div className="input-group">
                                 <input
                                     type="number"
@@ -323,93 +368,122 @@ function ProductSearchPage() {
                                 <h4 className="mb-0">Tìm kiếm sản phẩm</h4>
                             </div>
                             <div className="card-body">
-                                <input
-                                    type="text"
-                                    className="form-control form-control-lg"
-                                    value={searchInput}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập tên sản phẩm..."
-                                    autoFocus
-                                />
+                                <div ref={searchRef} className="position-relative">
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-lg"
+                                        value={searchInput}
+                                        onChange={handleInputChange}
+                                        placeholder="Nhập tên sản phẩm..."
+                                        autoFocus
+                                        onFocus={() => searchInput.trim().length > 0 && setShowSuggestions(true)}
+                                    />
+                                    
+                                    {showSuggestions && searchInput.trim().length > 0 && (
+                                        <div className="position-absolute w-100 bg-white shadow-lg rounded mt-1" 
+                                            style={{ zIndex: 1000, maxHeight: '400px', overflowY: 'auto' }}>
+                                            {loading ? (
+                                                <div className="p-3 text-center">
+                                                    <div className="spinner-border text-primary" />
+                                                </div>
+                                            ) : searchResults.length > 0 ? (
+                                                <ul className="list-group list-group-flush">
+                                                    {searchResults.map(product => {
+                                                        const statusBadge = getStatusBadge(product.Status);
+                                                        const isAvailable = product.Status === 'Received';
+                                                        return (
+                                                            <li 
+                                                                key={product.ID} 
+                                                                className={`list-group-item list-group-item-action ${!isAvailable ? 'text-muted' : ''}`}
+                                                                onClick={() => isAvailable && handleSelectProduct(product)}
+                                                                style={{ 
+                                                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                                                    opacity: isAvailable ? 1 : 0.7
+                                                                }}
+                                                            >
+                                                                <div className="d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <strong>{product.Product_name}</strong>
+                                                                        <div className="text-muted small">
+                                                                            {product.Brand_name} • {product.Product_type_name}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-end">
+                                                                        <span className={`badge ${statusBadge.class} me-2`}>
+                                                                            {statusBadge.text}
+                                                                        </span>
+                                                                        <div>
+                                                                            {parseFloat(getProductPrice(product)).toLocaleString()} đ
+                                                                        </div>
+                                                                        
+                                                                    </div>
+                                                                </div>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            ) : (
+                                                <div className="p-3 text-muted">
+                                                    Không tìm thấy sản phẩm phù hợp
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                                 
                                 {error && (
                                     <div className="alert alert-danger mt-3">
                                         {error}
                                     </div>
                                 )}
-                                
-                                <div className="mt-3">
-                                    {searchInput.trim().length > 0 && !loading && searchResults.length > 0 && (
-                                        <p><strong>Tìm thấy {searchResults.length} sản phẩm</strong></p>
-                                    )}
-                                    {searchInput.trim().length > 0 && !loading && searchResults.length === 0 && (
-                                        <div className="alert alert-warning">
-                                            Không tìm thấy sản phẩm nào phù hợp.
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                <div className="mt-3">
-                                    {loading ? (
-                                        <div className="text-center">
-                                            <div className="spinner-border text-primary" />
-                                        </div>
-                                    ) : (
+
+                                {/* Bảng sản phẩm đã chọn */}
+                                {selectedProducts.length > 0 && (
+                                    <div className="mt-4">
+                                        <h5>Sản phẩm đã chọn</h5>
                                         <div className="table-responsive">
-                                            <table className="table table-hover">
-                                                <thead className="table-light">
+                                            <table className="table table-bordered">
+                                                <thead className="table-info">
                                                     <tr>
+                                                        <th>STT</th>
                                                         <th>Sản phẩm</th>
-                                                        <th>Thương hiệu</th>
-                                                        <th>Loại</th>
-                                                        <th>Trạng thái</th>
                                                         <th>Giá</th>
+                                                        <th>Số lượng</th>
+                                                        <th>Thành tiền</th>
                                                         <th>Thao tác</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {searchResults.map(product => {
-                                                        const statusBadge = getStatusBadge(product.Status);
-                                                        return (
-                                                            <tr key={product.ID}>
-                                                                <td>
-                                                                    <div className="d-flex align-items-center">
-                                                                        {product.Image && (
-                                                                            <img
-                                                                                src={product.Image}
-                                                                                alt={product.Product_name}
-                                                                                className="img-thumbnail me-3"
-                                                                                style={{ width: '60px', height: '60px' }}
-                                                                            />
-                                                                        )}
-                                                                        <span>{product.Product_name}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td>{product.Brand_name}</td>
-                                                                <td>{product.Product_type_name}</td>
-                                                                <td>
-                                                                    <span className={`badge ${statusBadge.class}`}>
-                                                                        {statusBadge.text}
-                                                                    </span>
-                                                                </td>
-                                                                <td>{parseFloat(getProductPrice(product)).toLocaleString() || '0'} đ</td>
-                                                                <td>
-                                                                    <button
-                                                                        className="btn btn-sm btn-primary"
-                                                                        onClick={() => handleAddToOrder(product)}
-                                                                        disabled={product.Status !== 'Received'}
-                                                                    >
-                                                                        Thêm
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
+                                                    {selectedProducts.map((product, index) => (
+                                                        <tr key={product.ID}>
+                                                            <td>{index + 1}</td>
+                                                            <td>{product.Product_name}</td>
+                                                            <td>{parseFloat(getProductPrice(product)).toLocaleString()} đ</td>
+                                                            <td>{product.quantity || 1}</td>
+                                                            <td>
+                                                                {(parseFloat(getProductPrice(product)) * (product.quantity || 1)).toLocaleString()} đ
+                                                            </td>
+                                                            <td>
+                                                                <button
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    onClick={() => handleRemoveProduct(product.ID)}
+                                                                >
+                                                                    Xóa
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
                                                 </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colSpan="4">Tổng cộng</th>
+                                                        <th colSpan="2">{calculateTotal().toLocaleString()} đ</th>
+                                                    </tr>
+                                                </tfoot>
                                             </table>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -467,45 +541,6 @@ function ProductSearchPage() {
                                     />
                                 </div>
 
-                                <h5>Sản phẩm đã chọn ({selectedProducts.length})</h5>
-                                {selectedProducts.length === 0 ? (
-                                    <div className="alert alert-warning">Chưa có sản phẩm nào</div>
-                                ) : (
-                                    <table className="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Sản phẩm</th>
-                                                <th>Giá</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {selectedProducts.map((product) => (
-                                                <tr key={product.ID}>
-                                                    <td>{product.Product_name}</td>
-                                                    <td>{parseFloat(getProductPrice(product)).toLocaleString()} đ</td>
-                                                    <td>
-                                                        <button
-                                                            className="btn btn-sm btn-outline-danger"
-                                                            onClick={() => handleRemoveProduct(product.ID)}
-                                                        >
-                                                            Xóa
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th>Tổng cộng</th>
-                                                <th colSpan="2">
-                                                    {selectedProducts.reduce((sum, p) => sum + (parseFloat(getProductPrice(p)) || 0), 0).toLocaleString()} đ
-                                                </th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                )}
-
                                 <div className="d-grid gap-2 mt-4">
                                     <button
                                         className="btn btn-success btn-lg"
@@ -540,4 +575,4 @@ function ProductSearchPage() {
     );
 }
 
-export default ProductSearchPage; 
+export default ProductSearchPage;
