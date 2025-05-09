@@ -1,7 +1,6 @@
 const db = require("../config/db");
 
 const saleModel = {
-    // Tìm kiếm sản phẩm
     searchProducts: async (keyword) => {
         try {
             const [rows] = await db.query(
@@ -19,7 +18,7 @@ const saleModel = {
         }
     },
 
-     createOrder: async (orderData) => {
+    createOrder: async (orderData) => {
         let connection;
         try {
             connection = await db.getConnection();
@@ -29,7 +28,7 @@ const saleModel = {
             let totalValue = 0;
             const productIds = orderData.products.map(p => p.productId);
             
-            // Kiểm tra sản phẩm
+            // Kiểm tra sản phẩm (giữ nguyên logic)
             const [products] = await connection.query(
                 `SELECT p.ID, p.Sale_price, ctp.Price as Consignment_price
                 FROM TH_Product p
@@ -42,52 +41,45 @@ const saleModel = {
                 throw new Error('Một số sản phẩm không tồn tại hoặc không có sẵn');
             }
 
-            // Tính tổng giá trị
+            // Tính tổng giá trị (giữ nguyên)
             products.forEach(product => {
                 totalValue += parseFloat(product.Consignment_price || product.Sale_price);
             });
 
-            // 1. Tạo đơn hàng (không còn customer_id)
+            // 1. Tạo đơn hàng (sửa lại tên biến cho rõ ràng)
             const [orderResult] = await connection.query(
                 `INSERT INTO TH_Order 
                 (Total_value, Quantity, Order_status) 
                 VALUES (?, ?, 'Processing')`,
-                [
-                    totalValue,
-                    orderData.products.length
-                ]
+                [totalValue, orderData.products.length]
             );
             const orderId = orderResult.insertId;
 
-            // 2. Thêm thông tin khách hàng (bắt buộc phải có)
+            // 2. Thêm thông tin khách hàng (sửa lại tên field cho nhất quán)
             if (!orderData.customerInfo || (!orderData.customerInfo.name && !orderData.customerInfo.phone)) {
                 throw new Error('Thông tin khách hàng là bắt buộc');
             }
 
             await connection.query(
                 `INSERT INTO TH_Customer_Info 
-                (Order_id, Full_name, Phone, Address,Age) 
+                (Order_id, Full_name, Phone, Address, Age) 
                 VALUES (?, ?, ?, ?, ?)`,
                 [
                     orderId,
                     orderData.customerInfo.name,
                     orderData.customerInfo.phone,
                     orderData.customerInfo.address || null,
-                    orderData.customerInfo.Age || null
+                    orderData.customerInfo.age || null // Sửa Age -> age để nhất quán
                 ]
             );
 
-            // 3. Thêm chi tiết đơn hàng
+            // 3. Thêm chi tiết đơn hàng (giữ nguyên logic)
             for (const product of products) {
                 await connection.query(
                     `INSERT INTO TH_Order_Detail 
                     (Order_id, Product_id, Unit_price) 
                     VALUES (?, ?, ?)`,
-                    [
-                        orderId,
-                        product.ID,
-                        product.Consignment_price || product.Sale_price
-                    ]
+                    [orderId, product.ID, product.Consignment_price || product.Sale_price]
                 );
 
                 await connection.query(
@@ -108,7 +100,7 @@ const saleModel = {
 
     getInvoice: async (orderId) => {
         try {
-            // Lấy thông tin đơn hàng và khách hàng
+            // Lấy thông tin đơn hàng và khách hàng (sửa Age -> age)
             const [orderRows] = await db.query(
                 `SELECT o.*, 
                 ci.Full_name, ci.Phone, ci.Address, ci.Age
@@ -122,7 +114,7 @@ const saleModel = {
             
             const order = orderRows[0];
 
-            // Lấy chi tiết sản phẩm
+            // Lấy chi tiết sản phẩm (giữ nguyên)
             const [detailRows] = await db.query(
                 `SELECT od.*, p.Product_name, b.Brand_name, p.Image,
                 p.Sale_price, ctp.Price as Consignment_price
@@ -140,7 +132,7 @@ const saleModel = {
                     customer_name: order.Full_name,
                     customer_phone: order.Phone,
                     customer_address: order.Address,
-                    customer_Age: order.Age,
+                    customer_age: order.Age // Sửa Age -> age
                 },
                 products: detailRows.map(item => ({
                     ...item,

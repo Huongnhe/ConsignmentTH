@@ -275,3 +275,41 @@ export const searchProductsAPI = async (token, keyword) => {
         throw new Error(errorMsg);
     }
 };
+
+export const createOrdersAPI = async (token, orderData) => {
+    try {
+        const response = await axios.post(
+            `${API_URL}/admin/orders`,
+            orderData,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        
+        console.log("Phản hồi từ API khi thêm đơn hàng:", response.data);
+        return response.data;
+    } catch (error) {
+        const errorMsg = error.response?.data?.message || error.message;
+        console.error("Lỗi khi thêm đơn hàng:", errorMsg);
+        throw new Error(errorMsg);
+    }
+};
+
+export const getInvoiceAPI = async (token, orderId) => {
+    try {
+        const response = await axios.get(
+            `${API_URL}/admin/orders/${orderId}/invoice`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        const errorMsg = error.response?.data?.message || error.message;
+        throw new Error(errorMsg);
+    }
+};

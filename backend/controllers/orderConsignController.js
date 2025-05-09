@@ -1,7 +1,6 @@
 const saleModel = require("../models/orderConsignModel");
 
 const saleController = {
-    // Tìm kiếm sản phẩm
     searchProducts: async (req, res) => {
         try {
             const { keyword } = req.query;
@@ -17,40 +16,27 @@ const saleController = {
         }
     },
 
-    // Tạo đơn hàng mới
     createOrder: async (req, res) => {
-        const userId = req.user?.id;
-        if (!userId) {
-            return res.status(401).json({ error: "Bạn phải đăng nhập để thực hiện thao tác này" });
-        }
-
-        const { products, customerInfo, customerId } = req.body;
+        const { products, customerInfo } = req.body; // Chỉ lấy các field cần thiết
 
         // Validate input
         if (!Array.isArray(products) || products.length === 0) {
             return res.status(400).json({ error: "Danh sách sản phẩm không hợp lệ" });
         }
 
-        try {
-            // Tính tổng tiền và tổng số lượng
-            const totalValue = products.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const totalQuantity = products.reduce((sum, item) => sum + item.quantity, 0);
+        if (!customerInfo || (!customerInfo.name && !customerInfo.phone)) {
+            return res.status(400).json({ error: "Thông tin khách hàng là bắt buộc" });
+        }
 
+        try {
             const orderData = {
                 products: products.map(item => ({
-                    productId: item.productId,
-                    price: item.price,
-                    quantity: item.quantity
+                    productId: item.productId // Chỉ truyền productId
                 })),
-                customerInfo,
-                customerId,
-                totalValue,
-                totalQuantity
+                customerInfo
             };
 
-            const orderId = await saleModel.createOrder(orderData, userId);
-
-            // Lấy thông tin hóa đơn để trả về
+            const orderId = await saleModel.createOrder(orderData);
             const invoice = await saleModel.getInvoice(orderId);
 
             res.status(201).json({
@@ -67,7 +53,6 @@ const saleController = {
         }
     },
 
-    // Xem hóa đơn
     getInvoice: async (req, res) => {
         try {
             const orderId = parseInt(req.params.orderId);
