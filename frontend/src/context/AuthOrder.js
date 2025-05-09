@@ -1,31 +1,37 @@
-import { createContext, useState, useContext, useEffect } from "react";
-import { searchProductsAPI } from "../api/api"; // Đổi tên import cho đúng
-import { AuthContext } from "./AuthContext";
+import { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { searchProductsAPI } from "../api/api";
 
-export const ProductSearchContext = createContext(); // Đổi tên context
+export const ProductSearchContext = createContext();
 
-export const ProductSearchProvider = ({ children }) => { // Đổi tên provider
-    const { user } = useContext(AuthContext);
+export const ProductSearchProvider = ({ children }) => {
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [keyword, setKeyword] = useState('');
     const [lastSearch, setLastSearch] = useState(null);
 
+    const clearSearch = useCallback(() => {
+        setSearchResults([]);
+        setKeyword('');
+        setError(null);
+        setLastSearch(null);
+    }, []);
+
     useEffect(() => {
+        const user = localStorage.getItem("user");
         if (!user) {
             clearSearch();
         }
-    }, [user]);
+    }, [clearSearch]);
 
-    const searchProducts = async (searchKeyword) => { // Đổi tên hàm
+    const searchProducts = async (searchKeyword) => {
+        const token = localStorage.getItem("token");
         if (!searchKeyword?.trim()) {
             setError("Vui lòng nhập từ khóa tìm kiếm");
             return { success: false, message: "Search keyword is required" };
         }
 
-        const token = localStorage.getItem("token");
-        if (!token || !user) {
+        if (!token) {
             setError("Vui lòng đăng nhập để tìm kiếm");
             return { success: false, message: "Authentication required" };
         }
@@ -35,9 +41,9 @@ export const ProductSearchProvider = ({ children }) => { // Đổi tên provider
         setKeyword(searchKeyword);
 
         try {
-            const results = await searchProductsAPI(token, searchKeyword); // Gọi đúng API
+            const results = await searchProductsAPI(token, searchKeyword);
             setSearchResults(results);
-            setLastSearch(new Date()); 
+            setLastSearch(new Date());
             return { 
                 success: true, 
                 message: "Tìm kiếm thành công",
@@ -45,12 +51,10 @@ export const ProductSearchProvider = ({ children }) => { // Đổi tên provider
             };
         } catch (error) {
             console.error("Search error:", error);
-            
             const errorMessage = error.response?.data?.message || 
-                               "Tìm kiếm thất bại. Vui lòng thử lại";
+                               "Tìm kiếm thất bại. Vui lòng thử lại" + error.response?.data?.message;
             setError(errorMessage);
             setSearchResults([]);
-            
             return { 
                 success: false, 
                 message: errorMessage,
@@ -61,33 +65,27 @@ export const ProductSearchProvider = ({ children }) => { // Đổi tên provider
         }
     };
 
-    const clearSearch = () => {
-        setSearchResults([]);
-        setKeyword('');
-        setError(null);
-        setLastSearch(null);
-    };
-
     const value = {
         searchResults,
         loading,
         error,
         keyword,
         lastSearch,
-        searchProducts, // Cập nhật tên hàm
+        searchProducts,
         clearSearch,
         hasSearched: !!lastSearch
     };
 
     return (
-        <ProductSearchContext.Provider value={value}> {/* Đổi tên context */}
+        <ProductSearchContext.Provider value={value}>
             {children}
         </ProductSearchContext.Provider>
     );
 };
 
-export const useProductSearch = () => { // Đổi tên hook
-    const context = useContext(ProductSearchContext); // Đổi tên context
+
+export const useProductSearch = () => {
+    const context = useContext(ProductSearchContext);
     if (!context) {
         throw new Error('useProductSearch phải được sử dụng bên trong ProductSearchProvider');
     }

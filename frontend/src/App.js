@@ -18,41 +18,54 @@ import { AuthDetailProvider } from "./context/AuthDetail";
 import { AdminConsignmentProvider } from "./context/AuthAdminConsign";
 import { ProductSearchProvider } from "./context/AuthOrder";
 
-const PrivateRoute = ({ element, account }) => {
+const PrivateRoute = ({ element, requiredRole }) => {
   const { user } = useContext(AuthContext);
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
-  if (account && user.Account !== account) {
-    return <Navigate to="/home" />;
+  if (requiredRole && user.Account !== requiredRole) {
+    return <Navigate to={user.Account === "Manager" ? "/admin" : "/home"} replace />;
   }
 
   return element;
 };
 
 const AppContent = () => {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const location = useLocation();
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
     }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  const isAdminRoute = location.pathname.startsWith("/admin") && user?.Account === "Manager";
+  if (initialLoading) {
+    return <div className="app-loading">Loading...</div>;
+  }
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <>
       <Routes>
         <Route path="/" element={<HomePagePublic />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} account="Manager" />} />
-        <Route path="/home" element={<HomePageUser />} />
         <Route path="/register" element={<RegisterPage />} />
+        
+        {/* User Routes */}
+        <Route path="/home" element={<PrivateRoute element={<HomePageUser />} />} />
+        <Route path="/consigns" element={<PrivateRoute element={<ConsignPage />} />} />
+        <Route path="/CreateConsign" element={<PrivateRoute element={<CreateConsign />} />} />
+        <Route path="/detailConsign/:id" element={<PrivateRoute element={<ConsignDetailPage />} />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} requiredRole="Manager" />} />
         <Route
           path="/admin/orders"
           element={
@@ -62,30 +75,8 @@ const AppContent = () => {
                   <OrderPage />
                 </ProductSearchProvider>
               } 
-              account="Manager" 
+              requiredRole="Manager" 
             />
-          }
-        />
-        <Route
-          path="/CreateConsign"
-          element={
-            <CreateConsign />
-          }
-        />
-        <Route
-          path="/consigns"
-          element={
-            loading ? (
-              <div>Loading...</div>
-            ) : (
-              <ConsignPage />
-            )
-          }
-        />
-        <Route
-          path="/detailConsign/:id"
-          element={
-            <ConsignDetailPage />
           }
         />
         <Route 
@@ -93,7 +84,7 @@ const AppContent = () => {
           element={
             <PrivateRoute 
               element={<AdminConsign />} 
-              account="Manager" 
+              requiredRole="Manager" 
             />
           } 
         />
@@ -108,15 +99,13 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <AuthDetailProvider>
-          <AdminConsignmentProvider>
-            <ConsignProvider>
-              <ProductSearchProvider>
-                <AppContent />
-              </ProductSearchProvider>
-            </ConsignProvider>
-          </AdminConsignmentProvider>
-        </AuthDetailProvider>
+        <ConsignProvider>
+          <AuthDetailProvider>
+            <AdminConsignmentProvider>
+              <AppContent />
+            </AdminConsignmentProvider>
+          </AuthDetailProvider>
+        </ConsignProvider>
       </AuthProvider>
     </Router>
   );
