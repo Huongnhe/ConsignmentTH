@@ -27,8 +27,9 @@ function ProductSearchPage() {
     const [notification, setNotification] = useState({
         show: false,
         message: '',
-        type: '' // 'success', 'error', 'warning', 'info'
+        type: ''
     });
+    const [orderIdInput, setOrderIdInput] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -105,68 +106,82 @@ function ProductSearchPage() {
 
         const orderData = {
             products: selectedProducts.map(product => ({
-            productId: product.ID
+                productId: product.ID
             })),
             customerInfo: {
-            name: customerInfo.name,
-            phone: customerInfo.phone,
-            address: customerInfo.address,
-            age: parseInt(customerInfo.age)
+                name: customerInfo.name,
+                phone: customerInfo.phone,
+                address: customerInfo.address,
+                age: parseInt(customerInfo.age)
             }
         };
 
         try {
             const response = await createOrdersAPI(localStorage.getItem('token'), orderData);
             
-            // Kiểm tra response hợp lệ trước khi truy cập order_id
-            const orderId = response?.data?.order_id || response?.order_id;
+            const orderId = response.orderId;
             
             if (!orderId) {
-            throw new Error("Server không trả về ID đơn hàng");
+                throw new Error("Server không trả về ID đơn hàng");
             }
 
             showAlert(
-            `Tạo đơn hàng thành công! Mã đơn hàng: ${orderId}`,
-            'success',
-            5000
+                `Tạo đơn hàng thành công! Mã đơn hàng: ${orderId}`,
+                'success',
+                5000
             );
 
-            // Reset form
             setSelectedProducts([]);
             setCustomerInfo({ name: '', phone: '', address: '', age: '' });
             setSearchInput('');
             clearSearch();
 
-            // Xử lý hóa đơn
             try {
-            const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
-            if (invoice?.url) {
-                setTimeout(() => {
-                window.open(invoice.url, '_blank');
-                showAlert('Đang mở hóa đơn trong tab mới...', 'info');
-                }, 1000);
-            }
+                const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
+                if (invoice?.url) {
+                    setTimeout(() => {
+                        window.open(invoice.url, '_blank');
+                        showAlert('Đang mở hóa đơn trong tab mới...', 'info');
+                    }, 1000);
+                }
             } catch (invoiceError) {
-            console.error('Lỗi khi lấy hóa đơn:', invoiceError);
-            showAlert(
-                'Đơn hàng đã tạo nhưng không thể tải hóa đơn. Vui lòng thử lại sau.',
-                'warning'
-            );
+                console.error('Lỗi khi lấy hóa đơn:', invoiceError);
+                showAlert(
+                    'Đơn hàng đã tạo nhưng không thể tải hóa đơn. Vui lòng thử lại sau.',
+                    'warning'
+                );
             }
         } catch (error) {
             console.error('Chi tiết lỗi:', {
-            message: error.message,
-            response: error.response?.data
+                message: error.message,
+                response: error.response?.data
             });
             
             showAlert(
-            `Lỗi khi tạo đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
-            'error'
+                `Lỗi khi tạo đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
+                'error'
             );
         } finally {
             setIsSubmitting(false);
         }
-        };
+    };
+
+    const handleViewInvoice = async () => {
+        if (!orderIdInput || isNaN(orderIdInput)) {
+            showAlert('Vui lòng nhập ID đơn hàng hợp lệ', 'error');
+            return;
+        }
+
+        try {
+            const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderIdInput);
+            navigate(`/admin/orders/${orderIdInput}`, { state: { invoice } });
+        } catch (error) {
+            showAlert(
+                `Không tìm thấy hóa đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
+                'error'
+            );
+        }
+    };
 
     const getStatusBadge = (status) => {
         switch(status) {
@@ -195,7 +210,6 @@ function ProductSearchPage() {
         <div style={{ display: 'flex' }}>
             <SidebarMenu />
             
-            {/* Notification Alert */}
             {notification.show && (
                 <div className={`alert ${getAlertClass(notification.type)} alert-dismissible fade show`} 
                     style={{
@@ -211,7 +225,6 @@ function ProductSearchPage() {
                 </div>
             )}
 
-            {/* Confirmation Modal */}
             {showConfirmation && (
                 <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
                     <div className="modal-dialog modal-dialog-centered">
@@ -236,12 +249,12 @@ function ProductSearchPage() {
                                     <strong>Sản phẩm:</strong>
                                     <ul>
                                         {selectedProducts.map(product => (
-                                            <li key={product.ID}>{product.Product_name} - {product.Price?.toLocaleString()} đ</li>
+                                            <li key={product.ID}>{product.Product_name} - {product.Sale_price?.toLocaleString()} đ</li>
                                         ))}
                                     </ul>
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Tổng cộng:</strong> {selectedProducts.reduce((sum, p) => sum + (p.Price || 0), 0).toLocaleString()} đ
+                                    <strong>Tổng cộng:</strong> {selectedProducts.reduce((sum, p) => sum + (parseFloat(p.Sale_price) || 0), 0).toLocaleString()} đ
                                 </div>
                             </div>
                             <div className="modal-footer">
@@ -273,6 +286,32 @@ function ProductSearchPage() {
             )}
 
             <div className="container-fluid mt-3" style={{ marginLeft: '250px', padding: '20px' }}>
+                {/* Thêm thanh nav xem hóa đơn */}
+                <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
+                    <div className="container-fluid">
+                        <span className="navbar-brand">Quản lý đơn hàng</span>
+                        <div className="d-flex">
+                            <div className="input-group">
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    placeholder="Nhập ID đơn hàng"
+                                    value={orderIdInput}
+                                    onChange={(e) => setOrderIdInput(e.target.value)}
+                                />
+                                <button 
+                                    className="btn btn-outline-primary" 
+                                    type="button"
+                                    onClick={handleViewInvoice}
+                                    disabled={!orderIdInput || isSubmitting}
+                                >
+                                    Xem hóa đơn
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
                 <div className="row">
                     <div className="col-md-8">
                         <div className="card shadow mb-4">
@@ -349,7 +388,7 @@ function ProductSearchPage() {
                                                                         {statusBadge.text}
                                                                     </span>
                                                                 </td>
-                                                                <td>{product.Price?.toLocaleString() || '0'} đ</td>
+                                                                <td>{parseFloat(product.Sale_price).toLocaleString() || '0'} đ</td>
                                                                 <td>
                                                                     <button
                                                                         className="btn btn-sm btn-primary"
@@ -440,7 +479,7 @@ function ProductSearchPage() {
                                             {selectedProducts.map((product) => (
                                                 <tr key={product.ID}>
                                                     <td>{product.Product_name}</td>
-                                                    <td>{product.Price?.toLocaleString()} đ</td>
+                                                    <td>{parseFloat(product.Sale_price).toLocaleString()} đ</td>
                                                     <td>
                                                         <button
                                                             className="btn btn-sm btn-outline-danger"
@@ -456,7 +495,7 @@ function ProductSearchPage() {
                                             <tr>
                                                 <th>Tổng cộng</th>
                                                 <th colSpan="2">
-                                                    {selectedProducts.reduce((sum, p) => sum + (p.Price || 0), 0).toLocaleString()} đ
+                                                    {selectedProducts.reduce((sum, p) => sum + (parseFloat(p.Sale_price) || 0), 0).toLocaleString()} đ
                                                 </th>
                                             </tr>
                                         </tfoot>

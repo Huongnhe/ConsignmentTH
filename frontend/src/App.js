@@ -10,6 +10,7 @@ import ConsignDetailPage from "./pages/ConsignDetailPage";
 import AdminConsign from "./pages/AdminConsign";
 import HomePagePublic from "./pages/HomePagePublic";
 import OrderPage from "./pages/OrderStatusPage";
+import InvoiceDetailPage from './pages/InvoiceDetailPage';
 import Footer from "./pages/Footer";
 
 import { AuthProvider, AuthContext } from "./context/AuthContext";
@@ -79,6 +80,7 @@ const AppContent = () => {
             />
           }
         />
+        <Route path="/admin/orders/:orderId" element={<InvoiceDetailPage />} />
         <Route 
           path="/admin/consignments" 
           element={
