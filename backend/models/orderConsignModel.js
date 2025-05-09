@@ -19,57 +19,80 @@ const saleModel = {
         }
     },
 
-    // Tạo đơn hàng mới
-    createOrder: async (orderData, userId) => {
+     createOrder: async (orderData) => {
         let connection;
         try {
             connection = await db.getConnection();
             await connection.beginTransaction();
 
-            // Tạo thông tin khách hàng (nếu có)
-            let customerInfoId = null;
-            if (orderData.customerInfo && (orderData.customerInfo.name || orderData.customerInfo.phone)) {
-                const [customerResult] = await connection.query(
-                    `INSERT INTO TH_Customer_Info 
-                    (Name, Address, Phone, Age) 
-                    VALUES (?, ?, ?, ?)`,
-                    [
-                        orderData.customerInfo.name,
-                        orderData.customerInfo.address,
-                        orderData.customerInfo.phone,
-                        orderData.customerInfo.age
-                    ]
-                );
-                customerInfoId = customerResult.insertId;
+            // Tính tổng giá trị đơn hàng
+            let totalValue = 0;
+            const productIds = orderData.products.map(p => p.productId);
+            
+            // Kiểm tra sản phẩm
+            const [products] = await connection.query(
+                `SELECT p.ID, p.Sale_price, ctp.Price as Consignment_price
+                FROM TH_Product p
+                LEFT JOIN TH_Consignment_Ticket_Product_Detail ctp ON p.ID = ctp.Product_id
+                WHERE p.ID IN (?) AND p.Status = 'Received'`,
+                [productIds]
+            );
+
+            if (products.length !== productIds.length) {
+                throw new Error('Một số sản phẩm không tồn tại hoặc không có sẵn');
             }
 
-            // Tạo đơn hàng
+            // Tính tổng giá trị
+            products.forEach(product => {
+                totalValue += parseFloat(product.Consignment_price || product.Sale_price);
+            });
+
+            // 1. Tạo đơn hàng (không còn customer_id)
             const [orderResult] = await connection.query(
                 `INSERT INTO TH_Order 
-                (Customer_id, Total_value, Quantity, Order_status, Customer_info_id) 
-                VALUES (?, ?, ?, 'Processing', ?)`,
+                (Total_value, Quantity, Order_status) 
+                VALUES (?, ?, 'Processing')`,
                 [
-                    orderData.customerId || null, 
-                    orderData.totalValue,
-                    orderData.totalQuantity,
-                    customerInfoId
+                    totalValue,
+                    orderData.products.length
                 ]
             );
             const orderId = orderResult.insertId;
 
-            // Thêm chi tiết đơn hàng
-            for (const item of orderData.products) {
+            // 2. Thêm thông tin khách hàng (bắt buộc phải có)
+            if (!orderData.customerInfo || (!orderData.customerInfo.name && !orderData.customerInfo.phone)) {
+                throw new Error('Thông tin khách hàng là bắt buộc');
+            }
+
+            await connection.query(
+                `INSERT INTO TH_Customer_Info 
+                (Order_id, Full_name, Phone, Address,Age) 
+                VALUES (?, ?, ?, ?, ?)`,
+                [
+                    orderId,
+                    orderData.customerInfo.name,
+                    orderData.customerInfo.phone,
+                    orderData.customerInfo.address || null,
+                    orderData.customerInfo.Age || null
+                ]
+            );
+
+            // 3. Thêm chi tiết đơn hàng
+            for (const product of products) {
                 await connection.query(
                     `INSERT INTO TH_Order_Detail 
                     (Order_id, Product_id, Unit_price) 
                     VALUES (?, ?, ?)`,
-                    [orderId, item.productId, item.price]
+                    [
+                        orderId,
+                        product.ID,
+                        product.Consignment_price || product.Sale_price
+                    ]
                 );
 
-                // Cập nhật trạng thái sản phẩm thành 'Sold'
                 await connection.query(
                     `UPDATE TH_Product SET Status = 'Sold' WHERE ID = ?`,
-                    [item.productId]
+                    [product.ID]
                 );
             }
 
@@ -83,38 +106,46 @@ const saleModel = {
         }
     },
 
-    // Lấy thông tin hóa đơn
     getInvoice: async (orderId) => {
         try {
-            // Lấy thông tin chính đơn hàng
+            // Lấy thông tin đơn hàng và khách hàng
             const [orderRows] = await db.query(
                 `SELECT o.*, 
-                u.User_name as customer_name, u.Email as customer_email,
-                ci.Name as guest_name, ci.Phone as guest_phone, ci.Address as guest_address
+                ci.Full_name, ci.Phone, ci.Address, ci.Age
                 FROM TH_Order o
-                LEFT JOIN TH_User u ON o.Customer_id = u.ID
-                LEFT JOIN TH_Customer_Info ci ON o.Customer_info_id = ci.ID
+                JOIN TH_Customer_Info ci ON o.ID = ci.Order_id
                 WHERE o.ID = ?`,
                 [orderId]
             );
             
-            if (orderRows.length === 0) throw new Error('Order not found');
+            if (orderRows.length === 0) throw new Error('Không tìm thấy đơn hàng');
             
             const order = orderRows[0];
 
             // Lấy chi tiết sản phẩm
             const [detailRows] = await db.query(
-                `SELECT od.*, p.Product_name, b.Brand_name, p.Image
+                `SELECT od.*, p.Product_name, b.Brand_name, p.Image,
+                p.Sale_price, ctp.Price as Consignment_price
                 FROM TH_Order_Detail od
                 JOIN TH_Product p ON od.Product_id = p.ID
                 JOIN TH_Brand b ON p.Brand_id = b.ID
+                LEFT JOIN TH_Consignment_Ticket_Product_Detail ctp ON p.ID = ctp.Product_id
                 WHERE od.Order_id = ?`,
                 [orderId]
             );
 
             return {
-                order,
-                products: detailRows
+                order: {
+                    ...order,
+                    customer_name: order.Full_name,
+                    customer_phone: order.Phone,
+                    customer_address: order.Address,
+                    customer_Age: order.Age,
+                },
+                products: detailRows.map(item => ({
+                    ...item,
+                    final_price: item.Consignment_price || item.Sale_price
+                }))
             };
         } catch (error) {
             throw error;
