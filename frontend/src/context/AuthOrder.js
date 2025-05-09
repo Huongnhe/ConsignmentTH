@@ -52,7 +52,7 @@ export const ProductSearchProvider = ({ children }) => {
         } catch (error) {
             console.error("Search error:", error);
             const errorMessage = error.response?.data?.message || 
-                               "Tìm kiếm thất bại. Vui lòng thử lại" + error.response?.data?.message;
+                               "Tìm kiếm thất bại. Vui lòng thử lại" ;
             setError(errorMessage);
             setSearchResults([]);
             return { 

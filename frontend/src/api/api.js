@@ -256,6 +256,12 @@ export const updateConsignmentAPI = async (token, consignmentId, productId, upda
 };
 
 export const searchProductsAPI = async (token, keyword) => {
+    console.log("Calling search API with:", {
+        url: `${API_URL}/admin/products/search`,
+        keyword,
+        token: token ? "exists" : "missing"
+    });
+
     try {
         const response = await axios.get(
             `${API_URL}/admin/products/search`,
@@ -266,13 +272,15 @@ export const searchProductsAPI = async (token, keyword) => {
                 },
             }
         );
-        
-        console.log("Phản hồi từ API khi tìm sản phẩm:", response.data);
+        console.log("Search API success:", response.data);
         return response.data;
     } catch (error) {
-        const errorMsg = error.response?.data?.message || error.message;
-        console.error("Lỗi khi tìm sản phẩm:", errorMsg);
-        throw new Error(errorMsg);
+        console.error("Search API error details:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
     }
 };
 

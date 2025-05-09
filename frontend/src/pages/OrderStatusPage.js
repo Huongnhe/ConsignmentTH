@@ -9,6 +9,7 @@ function ProductSearchPage() {
         searchResults,
         loading,
         error,
+        keyword,
         searchProducts,
         clearSearch
     } = useProductSearch();
@@ -104,23 +105,30 @@ function ProductSearchPage() {
 
         const orderData = {
             products: selectedProducts.map(product => ({
-                productId: product.ID
+            productId: product.ID
             })),
             customerInfo: {
-                name: customerInfo.name,
-                phone: customerInfo.phone,
-                address: customerInfo.address,
-                age: parseInt(customerInfo.age)
+            name: customerInfo.name,
+            phone: customerInfo.phone,
+            address: customerInfo.address,
+            age: parseInt(customerInfo.age)
             }
         };
 
         try {
             const response = await createOrdersAPI(localStorage.getItem('token'), orderData);
             
+            // Kiểm tra response hợp lệ trước khi truy cập order_id
+            const orderId = response?.data?.order_id || response?.order_id;
+            
+            if (!orderId) {
+            throw new Error("Server không trả về ID đơn hàng");
+            }
+
             showAlert(
-                `Tạo đơn hàng thành công! Mã đơn hàng: ${response.data.order_id}`,
-                'success',
-                5000
+            `Tạo đơn hàng thành công! Mã đơn hàng: ${orderId}`,
+            'success',
+            5000
             );
 
             // Reset form
@@ -130,35 +138,35 @@ function ProductSearchPage() {
             clearSearch();
 
             // Xử lý hóa đơn
-            if (response.order_id) {
-                try {
-                    const invoice = await getInvoiceAPI(localStorage.getItem('token'), response.order_id);
-                    if (invoice.url) {
-                        setTimeout(() => {
-                            window.open(invoice.url, '_blank');
-                            showAlert('Đang mở hóa đơn trong tab mới...', 'info');
-                        }, 1000);
-                    }
-                } catch (invoiceError) {
-                    console.error('Error getting invoice:', invoiceError);
-                    showAlert(
-                        'Tạo đơn thành công nhưng không thể tải hóa đơn. Vui lòng thử lại sau.',
-                        'warning',
-                        5000
-                    );
-                }
+            try {
+            const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
+            if (invoice?.url) {
+                setTimeout(() => {
+                window.open(invoice.url, '_blank');
+                showAlert('Đang mở hóa đơn trong tab mới...', 'info');
+                }, 1000);
+            }
+            } catch (invoiceError) {
+            console.error('Lỗi khi lấy hóa đơn:', invoiceError);
+            showAlert(
+                'Đơn hàng đã tạo nhưng không thể tải hóa đơn. Vui lòng thử lại sau.',
+                'warning'
+            );
             }
         } catch (error) {
-            console.error('Error creating order:', error);
+            console.error('Chi tiết lỗi:', {
+            message: error.message,
+            response: error.response?.data
+            });
+            
             showAlert(
-                `Lỗi khi tạo đơn hàng: ${error.message || 'Vui lòng thử lại sau'}`,
-                'error',
-                5000
+            `Lỗi khi tạo đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
+            'error'
             );
         } finally {
             setIsSubmitting(false);
         }
-    };
+        };
 
     const getStatusBadge = (status) => {
         switch(status) {
