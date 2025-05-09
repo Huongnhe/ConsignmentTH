@@ -1,37 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getInvoiceAPI } from '../api/api';
 import SidebarMenu from './MenuAdmin';
+import { useProductSearch } from '../context/AuthOrder';
 
 function InvoiceDetailPage() {
     const { orderId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const [invoice, setInvoice] = useState(location.state?.invoice || null);
-    const [loading, setLoading] = useState(!location.state?.invoice);
-    const [error, setError] = useState(null);
+    const { invoice, fetchInvoice, loading, error } = useProductSearch();
 
     useEffect(() => {
-        if (!invoice) {
-            const fetchInvoice = async () => {
-                try {
-                    setLoading(true);
-                    const data = await getInvoiceAPI(localStorage.getItem('token'), orderId);
-                    setInvoice(data);
-                    setError(null);
-                } catch (err) {
-                    setError(err.message || 'Lỗi khi tải hóa đơn');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchInvoice();
+        if (!location.state?.invoice) {
+            fetchInvoice(orderId);
         }
-    }, [orderId, invoice]);
+    }, [orderId, fetchInvoice, location.state]);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    const dataInvoice = location.state?.invoice || invoice;
+
+    const handlePrint = () => window.print();
 
     if (loading) {
         return (
@@ -61,7 +47,7 @@ function InvoiceDetailPage() {
         );
     }
 
-    if (!invoice) {
+    if (!dataInvoice) {
         return (
             <div style={{ display: 'flex' }}>
                 <SidebarMenu />
@@ -74,6 +60,8 @@ function InvoiceDetailPage() {
             </div>
         );
     }
+
+    const { order, products } = dataInvoice;
 
     return (
         <div style={{ display: 'flex' }}>
@@ -91,6 +79,7 @@ function InvoiceDetailPage() {
                     </div>
                 </div>
 
+                {/* Thông tin khách hàng */}
                 <div className="card shadow mb-4">
                     <div className="card-header bg-primary text-white">
                         <h4 className="mb-0">Thông tin khách hàng</h4>
@@ -98,17 +87,18 @@ function InvoiceDetailPage() {
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-6">
-                                <p><strong>Tên khách hàng:</strong> {invoice.order.customer_name}</p>
-                                <p><strong>Điện thoại:</strong> {invoice.order.customer_phone}</p>
+                                <p><strong>Tên khách hàng:</strong> {order.customer_name}</p>
+                                <p><strong>Điện thoại:</strong> {order.customer_phone}</p>
                             </div>
                             <div className="col-md-6">
-                                <p><strong>Địa chỉ:</strong> {invoice.order.customer_address || 'Không có'}</p>
-                                <p><strong>Tuổi:</strong> {invoice.order.customer_age}</p>
+                                <p><strong>Địa chỉ:</strong> {order.customer_address || 'Không có'}</p>
+                                <p><strong>Tuổi:</strong> {order.customer_age}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {/* Chi tiết đơn hàng */}
                 <div className="card shadow">
                     <div className="card-header bg-info text-white">
                         <h4 className="mb-0">Chi tiết đơn hàng</h4>
@@ -126,7 +116,7 @@ function InvoiceDetailPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoice.products.map((product, index) => (
+                                    {products.map((product, index) => (
                                         <tr key={product.ID}>
                                             <td>{index + 1}</td>
                                             <td>
@@ -151,15 +141,15 @@ function InvoiceDetailPage() {
                                 <tfoot className="table-light">
                                     <tr>
                                         <th colSpan="4" className="text-end">Tổng cộng:</th>
-                                        <th>{parseFloat(invoice.order.Total_value).toLocaleString()} đ</th>
+                                        <th>{parseFloat(order.Total_value).toLocaleString()} đ</th>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                         <div className="mt-3">
-                            <p><strong>Trạng thái:</strong> 
-                                <span className={`badge ${invoice.order.Order_status === 'Processing' ? 'bg-warning' : 'bg-success'} ms-2`}>
-                                    {invoice.order.Order_status === 'Processing' ? 'Đang xử lý' : 'Hoàn thành'}
+                            <p><strong>Trạng thái:</strong>
+                                <span className={`badge ${order.Order_status === 'Processing' ? 'bg-warning' : 'bg-success'} ms-2`}>
+                                    {order.Order_status === 'Processing' ? 'Đang xử lý' : 'Hoàn thành'}
                                 </span>
                             </p>
                             <p><strong>Ngày tạo:</strong> {new Date().toLocaleDateString()}</p>

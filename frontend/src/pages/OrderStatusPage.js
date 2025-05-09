@@ -206,6 +206,11 @@ function ProductSearchPage() {
         }
     };
 
+    // Hàm helper để lấy giá đúng (Consignment_price nếu có, nếu không thì Sale_price)
+    const getProductPrice = (product) => {
+        return product.Consignment_price || product.Sale_price;
+    };
+
     return (
         <div style={{ display: 'flex' }}>
             <SidebarMenu />
@@ -249,12 +254,12 @@ function ProductSearchPage() {
                                     <strong>Sản phẩm:</strong>
                                     <ul>
                                         {selectedProducts.map(product => (
-                                            <li key={product.ID}>{product.Product_name} - {product.Sale_price?.toLocaleString()} đ</li>
+                                            <li key={product.ID}>{product.Product_name} - {parseFloat(getProductPrice(product)).toLocaleString()} đ</li>
                                         ))}
                                     </ul>
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Tổng cộng:</strong> {selectedProducts.reduce((sum, p) => sum + (parseFloat(p.Sale_price) || 0), 0).toLocaleString()} đ
+                                    <strong>Tổng cộng:</strong> {selectedProducts.reduce((sum, p) => sum + (parseFloat(getProductPrice(p)) || 0), 0).toLocaleString()} đ
                                 </div>
                             </div>
                             <div className="modal-footer">
@@ -286,7 +291,6 @@ function ProductSearchPage() {
             )}
 
             <div className="container-fluid mt-3" style={{ marginLeft: '250px', padding: '20px' }}>
-                {/* Thêm thanh nav xem hóa đơn */}
                 <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
                     <div className="container-fluid">
                         <span className="navbar-brand">Quản lý đơn hàng</span>
@@ -388,7 +392,7 @@ function ProductSearchPage() {
                                                                         {statusBadge.text}
                                                                     </span>
                                                                 </td>
-                                                                <td>{parseFloat(product.Sale_price).toLocaleString() || '0'} đ</td>
+                                                                <td>{parseFloat(getProductPrice(product)).toLocaleString() || '0'} đ</td>
                                                                 <td>
                                                                     <button
                                                                         className="btn btn-sm btn-primary"
@@ -479,7 +483,7 @@ function ProductSearchPage() {
                                             {selectedProducts.map((product) => (
                                                 <tr key={product.ID}>
                                                     <td>{product.Product_name}</td>
-                                                    <td>{parseFloat(product.Sale_price).toLocaleString()} đ</td>
+                                                    <td>{parseFloat(getProductPrice(product)).toLocaleString()} đ</td>
                                                     <td>
                                                         <button
                                                             className="btn btn-sm btn-outline-danger"
@@ -495,7 +499,7 @@ function ProductSearchPage() {
                                             <tr>
                                                 <th>Tổng cộng</th>
                                                 <th colSpan="2">
-                                                    {selectedProducts.reduce((sum, p) => sum + (parseFloat(p.Sale_price) || 0), 0).toLocaleString()} đ
+                                                    {selectedProducts.reduce((sum, p) => sum + (parseFloat(getProductPrice(p)) || 0), 0).toLocaleString()} đ
                                                 </th>
                                             </tr>
                                         </tfoot>
@@ -536,4 +540,4 @@ function ProductSearchPage() {
     );
 }
 
-export default ProductSearchPage;
+export default ProductSearchPage; 

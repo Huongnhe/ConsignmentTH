@@ -1,10 +1,11 @@
 import { createContext, useState, useContext, useEffect, useCallback } from "react";
-import { searchProductsAPI } from "../api/api";
+import { searchProductsAPI, getInvoiceAPI } from "../api/api";
 
 export const ProductSearchContext = createContext();
 
 export const ProductSearchProvider = ({ children }) => {
     const [searchResults, setSearchResults] = useState([]);
+    const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [keyword, setKeyword] = useState('');
@@ -19,9 +20,7 @@ export const ProductSearchProvider = ({ children }) => {
 
     useEffect(() => {
         const user = localStorage.getItem("user");
-        if (!user) {
-            clearSearch();
-        }
+        if (!user) clearSearch();
     }, [clearSearch]);
 
     const searchProducts = async (searchKeyword) => {
@@ -30,7 +29,6 @@ export const ProductSearchProvider = ({ children }) => {
             setError("Vui lòng nhập từ khóa tìm kiếm");
             return { success: false, message: "Search keyword is required" };
         }
-
         if (!token) {
             setError("Vui lòng đăng nhập để tìm kiếm");
             return { success: false, message: "Authentication required" };
@@ -44,22 +42,30 @@ export const ProductSearchProvider = ({ children }) => {
             const results = await searchProductsAPI(token, searchKeyword);
             setSearchResults(results);
             setLastSearch(new Date());
-            return { 
-                success: true, 
-                message: "Tìm kiếm thành công",
-                data: results 
-            };
+            return { success: true, data: results };
         } catch (error) {
-            console.error("Search error:", error);
-            const errorMessage = error.response?.data?.message || 
-                               "Tìm kiếm thất bại. Vui lòng thử lại" ;
+            const errorMessage = error.response?.data?.message || "Tìm kiếm thất bại";
             setError(errorMessage);
             setSearchResults([]);
-            return { 
-                success: false, 
-                message: errorMessage,
-                error: error.response?.data || error 
-            };
+            return { success: false, message: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchInvoice = async (orderId) => {
+        const token = localStorage.getItem('token');
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getInvoiceAPI(token, orderId);
+            setInvoice(data);
+            return { success: true, data };
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || "Lỗi khi tải hóa đơn";
+            setError(errorMsg);
+            setInvoice(null);
+            return { success: false, message: errorMsg };
         } finally {
             setLoading(false);
         }
@@ -71,9 +77,11 @@ export const ProductSearchProvider = ({ children }) => {
         error,
         keyword,
         lastSearch,
+        invoice,
         searchProducts,
+        fetchInvoice,
         clearSearch,
-        hasSearched: !!lastSearch
+        hasSearched: !!lastSearch,
     };
 
     return (
@@ -82,7 +90,6 @@ export const ProductSearchProvider = ({ children }) => {
         </ProductSearchContext.Provider>
     );
 };
-
 
 export const useProductSearch = () => {
     const context = useContext(ProductSearchContext);

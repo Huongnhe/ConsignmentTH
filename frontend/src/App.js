@@ -80,7 +80,14 @@ const AppContent = () => {
             />
           }
         />
-        <Route path="/admin/orders/:orderId" element={<InvoiceDetailPage />} />
+        <Route path="/admin/orders/:orderId" 
+          element={
+            <ProductSearchProvider>
+              <InvoiceDetailPage />
+            </ProductSearchProvider>
+          }
+        />
+
         <Route 
           path="/admin/consignments" 
           element={
