@@ -24,6 +24,7 @@ class LoginHandler:
                 email_input = self.wait.until(EC.presence_of_element_located((By.ID, "email")))
                 email_input.clear()
                 email_input.send_keys(email)
+                sleep(1)
             except TimeoutException:
                 print("-> [VALIDATE] Không tìm thấy trường email")
                 return False
@@ -33,6 +34,7 @@ class LoginHandler:
                 password_input = self.wait.until(EC.presence_of_element_located((By.ID, "password")))
                 password_input.clear()
                 password_input.send_keys(password)
+                sleep(1)
             except TimeoutException:
                 print("-> [VALIDATE] Không tìm thấy trường password")
                 return False
@@ -46,25 +48,17 @@ class LoginHandler:
                 print("-> [VALIDATE] Không tìm thấy nút đăng nhập")
                 return False
             
-            # Xử lý alert nếu có (trường hợp đăng nhập sai)
-            try:
-                alert = self.driver.switch_to.alert
-                alert_text = alert.text
-                print(f"-> [VALIDATE] Xuất hiện alert: {alert_text}")
-                alert.accept()
-                sleep(3)
-                return False
-            except NoAlertPresentException:
-                pass
             
-            # Kiểm tra đăng nhập thành công
-            if "home" or "admin" in self.driver.current_url:
+           # Kiểm tra đăng nhập thành công
+            current_url = self.driver.current_url
+            if "home" in current_url or "admin" in current_url:
                 print("-> [SUCCESS] Đăng nhập thành công")
                 sleep(2)
                 return True
             else:
-                print("-> [VALIDATE] Đăng nhập không thành công (không chuyển về trang home)")
+                print("-> [VALIDATE] Đăng nhập không thành công (không chuyển về trang home/admin)")
                 return False
+
             
         except Exception as e:
             print(f"-> [SYSTEM ERROR] Lỗi hệ thống khi đăng nhập: {str(e)}")

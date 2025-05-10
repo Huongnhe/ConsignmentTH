@@ -9,8 +9,8 @@ const HomePagePublic = () => {
 
   useEffect(() => {
     if (user) {
-      if (user.Account === "Manager") {
-        navigate("/admin");
+      if (user.Account) {
+        navigate("/");
       } else {
         navigate("/");
       }

@@ -37,32 +37,37 @@ class ConsignmentHandler:
                 product_name = self.wait.until(EC.presence_of_element_located((By.NAME, "Product_name")))
                 product_name.clear()
                 product_name.send_keys(consignment_case["product_name"])
-                
+                sleep(2)
+
                 original_price = self.driver.find_element(By.NAME, "Original_price")
                 original_price.clear()
                 original_price.send_keys(consignment_case["original_price"])
-                
+                sleep(2)
+
                 sale_price = self.driver.find_element(By.NAME, "Sale_price")
                 sale_price.clear()
                 sale_price.send_keys(consignment_case["sale_price"])
-                
+                sleep(2)
+
                 brand_select = self.driver.find_element(By.NAME, "Brand_name")
                 self.driver.execute_script("arguments[0].scrollIntoView(true);", brand_select)
                 brand_select.click()
-                sleep(1)
+                sleep(2)
+
                 self.driver.find_element(By.XPATH, f"//option[contains(., '{consignment_case['brand']}')]").click()
                 
                 type_select = self.driver.find_element(By.NAME, "Product_type_name")
                 self.driver.execute_script("arguments[0].scrollIntoView(true);", type_select)
                 type_select.click()
-                sleep(1)
+                sleep(2)
                 self.driver.find_element(By.XPATH, f"//option[contains(., '{consignment_case['product_type']}')]").click()
                 
                 quantity = self.driver.find_element(By.NAME, "Quantity")
                 self.driver.execute_script("arguments[0].scrollIntoView(true);", quantity)
                 quantity.clear()
                 quantity.send_keys(consignment_case["quantity"])
-                
+                sleep(2)
+
             except NoSuchElementException as e:
                 print(f"-> [VALIDATE] Không tìm thấy trường nhập liệu: {str(e)}")
                 return False
@@ -74,7 +79,7 @@ class ConsignmentHandler:
                 img = Image.new('RGB', (100, 100), color='red')
                 img.save(image_path)
                 print(f"-> [INFO] Đã tạo file ảnh mẫu tại: {image_path}")
-            
+                
             print(f"-> [INFO] Đang upload ảnh từ: {image_path}")
             try:
                 image_input = self.driver.find_element(By.XPATH, "//input[@type='file']")
@@ -85,6 +90,7 @@ class ConsignmentHandler:
                 try:
                     self.wait.until(EC.presence_of_element_located(
                         (By.XPATH, "//img[contains(@src, 'blob:') or contains(@src, 'data:image')]")))
+                    sleep(2)
                     print("-> [INFO] Upload ảnh thành công")
                 except TimeoutException:
                     print("-> [VALIDATE] Không xác nhận được ảnh đã upload")

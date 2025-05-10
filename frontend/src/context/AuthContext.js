@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.error("Lỗi khi đăng nhập:", error);
-            alert(error.message || "Đăng nhập thất bại!");
             throw error; // Ném lỗi để component có thể bắt và xử lý
         }
     };

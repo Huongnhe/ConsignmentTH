@@ -13,7 +13,7 @@ class ConsignmentTest:
             self.db = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="huongne",
+                password="120804",
                 database="ConsignmentTH"
             )
             self.cursor = self.db.cursor()
@@ -45,7 +45,7 @@ class ConsignmentTest:
         self.accounts = [
             
             {
-                "email": "wrong@example.com",
+                "email": "wrong@gmail.com",
                 "password": "wrongpass",
                 "description": "User sai"
             },
@@ -55,17 +55,17 @@ class ConsignmentTest:
                 "description": "Email empty"
             },
             {
-                "email": "cus@example.com",
+                "email": "cus@gmail.com",
                 "password": "",
                 "description": "Password empty"
             },
             {
-                "email": "cus@example.com",
+                "email": "cus@gmail.com",
                 "password": "12345",
                 "description": "User đúng"
             },
             {
-                "email": "admin@example.com", 
+                "email": "admin@gmail.com", 
                 "password": "123",
                 "description": "admin"
             }
@@ -131,6 +131,7 @@ class ConsignmentTest:
             # Thực hiện login
             login_success = False
             try:
+                sleep(2)
                 login_success = self.login_handler.login(account)
             except Exception as e:
                 print(f"[SYSTEM ERROR] Lỗi khi đăng nhập: {str(e)}")
