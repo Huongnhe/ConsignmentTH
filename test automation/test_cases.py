@@ -13,7 +13,7 @@ class ConsignmentTest:
             self.db = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="120804",
+                password="huongne",
                 database="ConsignmentTH"
             )
             self.cursor = self.db.cursor()
@@ -43,15 +43,26 @@ class ConsignmentTest:
         
         # Danh sách accounts
         self.accounts = [
-            {
-                "email": "cus@example.com",
-                "password": "12345",
-                "description": "User đúng"
-            },
+            
             {
                 "email": "wrong@example.com",
                 "password": "wrongpass",
                 "description": "User sai"
+            },
+            {
+                "email": "",
+                "password": "wrongpass",
+                "description": "Email empty"
+            },
+            {
+                "email": "cus@example.com",
+                "password": "",
+                "description": "Password empty"
+            },
+            {
+                "email": "cus@example.com",
+                "password": "12345",
+                "description": "User đúng"
             },
             {
                 "email": "admin@example.com", 
@@ -87,7 +98,7 @@ class ConsignmentTest:
         self.order_cases = [
             {
                 "case_name": "Case 1 - Thêm đơn hàng hợp lệ",
-                "product_name": "Nike Air Force 1",
+                "product_name": "Adidas Ultraboost",
                 "customer_name": "Nguyễn Văn A",
                 "customer_phone": "0987654321",
                 "customer_age": "30"

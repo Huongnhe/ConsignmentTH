@@ -88,7 +88,7 @@ const LoginPage = () => {
               type="email"
               id="email"
               className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-              placeholder="your@email.com"
+              placeholder=""
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
@@ -106,7 +106,7 @@ const LoginPage = () => {
               type="password"
               id="password"
               className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-              placeholder="••••••••"
+              placeholder=""
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
