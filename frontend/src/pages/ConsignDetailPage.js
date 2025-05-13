@@ -29,7 +29,15 @@ const ConsignmentDetailPage = () => {
 
     useEffect(() => {
         if (consignmentDetail) {
-            setUpdatedConsignmentDetail({ ...consignmentDetail });
+            // Chuyển đổi dữ liệu từ Product_Image sang Image nếu cần
+            const convertedData = {
+                ...consignmentDetail,
+                Products: consignmentDetail.Products?.map(product => ({
+                    ...product,
+                    Image: product.Product_Image || product.Image || '' // Giữ lại cả 2 trường để tương thích
+                }))
+            };
+            setUpdatedConsignmentDetail(convertedData);
         }
     }, [consignmentDetail]);
 
@@ -46,56 +54,73 @@ const ConsignmentDetailPage = () => {
         return consignmentDetail?.Consignment_Status?.toLowerCase() === "approved";
     };
 
-   const handleUpdate = async () => {
-    // Validate all products before updating
+   const handleImageChange = (index, file) => {
+        const updatedProducts = [...updatedConsignmentDetail.Products];
+        if (file) {
+            updatedProducts[index].Image = file.name;
+            updatedProducts[index].ImageFile = file;
+            updatedProducts[index].Product_Image = file.name; 
+         } else {
+            updatedProducts[index].Image = '';
+            updatedProducts[index].ImageFile = null;
+            updatedProducts[index].Product_Image = '';
+        }
+        setUpdatedConsignmentDetail({
+            ...updatedConsignmentDetail,
+            Products: updatedProducts
+        });
+    };
+
+    const handleUpdate = async () => {
         for (const product of updatedConsignmentDetail.Products) {
             const updatedData = {
                 Product_name: (product.Product_Name || "").trim(),
-                Brand_name: (product.Brand_Name || "").trim(), // Sửa thành Brand_Name
+                Brand_name: (product.Brand_Name || "").trim(),
                 Product_Type_Name: (product.Product_Type_Name || "").trim(),
                 Original_price: Number(product.Original_Price),
                 Sale_price: Number(product.Sale_Price),
                 Quantity: Number(product.Quantity),
-                Image: product.Product_Image || "../Images/default.png"
+                Image: product.Product_Image ? `../Images/${product.Product_Image}` : null,
+                ImageFile: product.ImageFile || null
             };
 
-            console.log("Product update data:", updatedData); // Thêm log này
-
-            // Validate required fields
             if (!updatedData.Product_name) {
-                showModal("Lỗi", `Tên sản phẩm không được để trống`);
+                showModal("Error", `Product name cannot be empty`);
                 return;
             }
             if (!updatedData.Brand_name) {
-                showModal("Lỗi", `Vui lòng chọn thương hiệu cho sản phẩm "${updatedData.Product_name}"`);
+                showModal("Error", `Please select brand for product "${updatedData.Product_name}"`);
                 return;
             }
             if (!updatedData.Product_Type_Name) {
-                showModal("Lỗi", `Vui lòng chọn loại sản phẩm cho "${updatedData.Product_name}"`);
+                showModal("Error", `Please select product type for "${updatedData.Product_name}"`);
                 return;
             }
-            if (isNaN(updatedData.Original_price)) {
-                showModal("Lỗi", `Giá gốc không hợp lệ cho "${updatedData.Product_name}" (Brand: ${updatedData.Brand_name}, Type: ${updatedData.Product_Type_Name})`);
+            if (isNaN(updatedData.Original_price) || updatedData.Original_price <= 0) {
+                showModal("Error", `Invalid original price for "${updatedData.Product_name}"`);
                 return;
             }
-            if (isNaN(updatedData.Sale_price)) {
-                showModal("Lỗi", `Giá bán không hợp lệ cho "${updatedData.Product_name}" (Brand: ${updatedData.Brand_name}, Type: ${updatedData.Product_Type_Name})`);
+            if (isNaN(updatedData.Sale_price) || updatedData.Sale_price <= 0) {
+                showModal("Error", `Invalid sale price for "${updatedData.Product_name}"`);
                 return;
             }
-            if (isNaN(updatedData.Quantity)) {
-                showModal("Lỗi", `Số lượng không hợp lệ cho "${updatedData.Product_name}" (Brand: ${updatedData.Brand_name}, Type: ${updatedData.Product_Type_Name})`);
+            if (updatedData.Sale_price <= updatedData.Original_price) {
+                showModal("Error", `Sale price must be higher than original price for "${updatedData.Product_name}"`);
+                return;
+            }
+            if (isNaN(updatedData.Quantity) || updatedData.Quantity <= 0) {
+                showModal("Error", `Invalid quantity for "${updatedData.Product_name}"`);
                 return;
             }
         }
 
         showModal(
-            "Xác nhận",
-            "Bạn chắc chắn muốn cập nhật tất cả sản phẩm?",
+            "Confirmation",
+            "Are you sure you want to update all products?",
             true,
             async () => {
                 setIsUpdating(true);
                 try {
-                    // Update all products
                     const updatePromises = updatedConsignmentDetail.Products.map(product => {
                         const updatedData = {
                             Product_name: (product.Product_Name || "").trim(),
@@ -104,10 +129,10 @@ const ConsignmentDetailPage = () => {
                             Original_price: Number(product.Original_Price),
                             Sale_price: Number(product.Sale_Price),
                             Quantity: Number(product.Quantity),
-                            Image: product.Product_Image || "../Images/default.png"
+                            Image: product.Product_Image ? `/Images/${product.Product_Image}` : null,
+                            ImageFile: product.ImageFile || null
                         };
                         
-                        console.log("Updating product with data:", updatedData);
                         return updateConsignment(
                             consignmentDetail.Consignment_ID,
                             product.Product_ID,
@@ -116,12 +141,10 @@ const ConsignmentDetailPage = () => {
                     });
 
                     const results = await Promise.all(updatePromises);
-                    
-                    // Check if all updates were successful
                     const allSuccess = results.every(result => result && result.success);
                     
                     if (allSuccess) {
-                        showModal("Thành công", "Cập nhật tất cả sản phẩm thành công!");
+                        showModal("Success", "All products updated successfully!");
                         await fetchConsignmentDetail(id);
                         setIsEditMode(false);
                     } else {
@@ -129,16 +152,15 @@ const ConsignmentDetailPage = () => {
                             .filter(result => !result.success)
                             .map(result => result.message)
                             .join("\n");
-                        
-                        showModal("Lỗi", errorMessages || "Cập nhật một số sản phẩm thất bại");
+                        showModal("Error", errorMessages || "Failed to update some products");
                     }
                 } catch (error) {
                     console.error("Update error:", error);
                     showModal(
-                        "Lỗi", 
+                        "Error", 
                         error.response?.data?.error || 
                         error.message || 
-                        "Có lỗi xảy ra khi cập nhật sản phẩm"
+                        "An error occurred while updating products"
                     );
                 } finally {
                     setIsUpdating(false);
@@ -149,8 +171,8 @@ const ConsignmentDetailPage = () => {
 
     const handleDelete = async () => {
         showModal(
-            "Xác nhận xóa",
-            "Bạn có chắc chắn muốn xóa đơn ký gửi này?",
+            "Confirm Delete",
+            "Are you sure you want to delete this consignment?",
             true,
             async () => {
                 try {
@@ -159,7 +181,7 @@ const ConsignmentDetailPage = () => {
                         navigate("/consigns");
                     }
                 } catch (err) {
-                    showModal("Lỗi", err.message || "Xóa đơn ký gửi không thành công");
+                    showModal("Error", err.message || "Failed to delete consignment");
                 }
             }
         );
@@ -167,17 +189,17 @@ const ConsignmentDetailPage = () => {
 
     const handleDeleteProduct = async (productId) => {
         if (!consignmentDetail?.Consignment_ID || !productId) {
-            showModal("Lỗi", "Thiếu thông tin đơn ký gửi hoặc sản phẩm");
+            showModal("Error", "Missing consignment or product information");
             return;
         }
 
         const isLastProduct = consignmentDetail.Products?.length === 1;
         const message = isLastProduct
-            ? "Đây là sản phẩm cuối cùng. Xóa nó sẽ xóa luôn đơn ký gửi. Bạn có chắc chắn?"
-            : "Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn ký gửi?";
+            ? "This is the last product. Deleting it will also delete the consignment. Are you sure?"
+            : "Are you sure you want to delete this product from the consignment?";
 
         showModal(
-            "Xác nhận xóa",
+            "Confirm Delete",
             message,
             true,
             async () => {
@@ -188,22 +210,22 @@ const ConsignmentDetailPage = () => {
                     );
 
                     if (!result) {
-                        throw new Error("Không nhận được phản hồi từ server");
+                        throw new Error("No response from server");
                     }
 
                     if (result.success) {
                         if (result.ticketDeleted) {
-                            showModal("Thành công", "Đơn ký gửi đã được xóa do không còn sản phẩm!");
+                            showModal("Success", "Consignment has been deleted as it contains no products!");
                             navigate("/consigns");
                         } else {
-                            showModal("Thành công", "Xóa sản phẩm thành công!");
+                            showModal("Success", "Product deleted successfully!");
                             await fetchConsignmentDetail(id);
                         }
                     } else {
-                        showModal("Lỗi", result.message || "Xóa sản phẩm không thành công");
+                        showModal("Error", result.message || "Failed to delete product");
                     }
                 } catch (err) {
-                    showModal("Lỗi", err.message || "Lỗi khi xóa sản phẩm");
+                    showModal("Error", err.message || "Error deleting product");
                 }
             }
         );
@@ -211,15 +233,13 @@ const ConsignmentDetailPage = () => {
 
     const handleProductChange = (index, field, value) => {
         const updatedProducts = [...updatedConsignmentDetail.Products];
-        // Đổi tên trường cho phù hợp
-        const apiFieldName = field === "Brand_Name" ? "Brand_name" : 
-                            field === "Product_Type_Name" ? "Product_Type_Name" : field;
         updatedProducts[index][field] = value;
         setUpdatedConsignmentDetail({
             ...updatedConsignmentDetail,
             Products: updatedProducts
         });
     };
+
     const getStatusColorClass = (status) => {
         switch (status.toLowerCase()) {
             case "pending":
@@ -233,9 +253,9 @@ const ConsignmentDetailPage = () => {
         }
     };
 
-    if (loading) return <div className="text-center">Đang tải...</div>;
+    if (loading) return <div className="text-center">Loading...</div>;
     if (error) return <div className="text-center text-danger">{error}</div>;
-    if (!consignmentDetail) return <div className="text-center">Không tìm thấy thông tin đơn ký gửi</div>;
+    if (!consignmentDetail) return <div className="text-center">Consignment not found</div>;
 
     return (
         <ConsignProvider>
@@ -246,23 +266,23 @@ const ConsignmentDetailPage = () => {
                         <div className="card-header py-3" style={{ backgroundColor: '#d4a762', borderBottom: '1px solid #e5e7eb' }}>
                             <h3 className="text-center mb-0 text-white">
                                 <i className="bi bi-box-seam me-2"></i>
-                                Chi tiết đơn ký gửi
+                                Consignment Details
                             </h3>
                         </div>
                         <div className="card-body p-4" style={{ backgroundColor: '#f9fafb' }}>
-                            <h4 className="mb-4" style={{ color: '#78350f' }}>Thông tin đơn ký gửi</h4>
+                            <h4 className="mb-4" style={{ color: '#78350f' }}>Consignment Information</h4>
                             <div className="row">
                                 <div className="col-md-6">
-                                    <p><strong>Mã đơn:</strong> {consignmentDetail.Consignment_ID}</p>
-                                    <p><strong>Ngày tạo:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
+                                    <p><strong>Consignment ID:</strong> {consignmentDetail.Consignment_ID}</p>
+                                    <p><strong>Created Date:</strong> {new Date(consignmentDetail.Consignment_Create_Date).toLocaleDateString()}</p>
                                 </div>
                                 <div className="col-md-6">
-                                    <p><strong>Tên khách hàng:</strong> {consignmentDetail.Customer_Name}</p>
+                                    <p><strong>Customer Name:</strong> {consignmentDetail.Customer_Name}</p>
                                     <p><strong>Email:</strong> {consignmentDetail.Customer_Email}</p>
                                 </div>
                             </div>
                             <p className="mt-3">
-                                <strong>Trạng thái:</strong>{" "}
+                                <strong>Status:</strong>{" "}
                                 <span className={getStatusColorClass(consignmentDetail.Consignment_Status)}>
                                     {consignmentDetail.Consignment_Status}
                                 </span>
@@ -272,7 +292,7 @@ const ConsignmentDetailPage = () => {
 
                     <div className="card border-0 shadow-sm rounded-lg overflow-hidden">
                         <div className="card-header py-3" style={{ backgroundColor: '#d4a762', borderBottom: '1px solid #e5e7eb' }}>
-                            <h4 className="mb-0 text-white">Danh sách sản phẩm</h4>
+                            <h4 className="mb-0 text-white">Product List</h4>
                         </div>
                         <div className="card-body p-4" style={{ backgroundColor: '#f9fafb' }}>
                             {isEditMode ? (
@@ -281,30 +301,54 @@ const ConsignmentDetailPage = () => {
                                         <table className="table table-hover align-middle">
                                             <thead style={{ backgroundColor: '#ecfdf5' }}>
                                                 <tr>
-                                                    <th style={{ color: '#065f46' }}>Ảnh</th>
-                                                    <th style={{ color: '#065f46' }}>Tên sản phẩm</th>
-                                                    <th style={{ color: '#065f46' }}>Thương hiệu</th>
-                                                    <th style={{ color: '#065f46' }}>Loại</th>
-                                                    <th style={{ color: '#065f46' }}>Giá gốc</th>
-                                                    {shouldShowConsignmentPrice() && (
-                                                        <th style={{ color: '#065f46' }}>Giá ký gửi</th>
-                                                    )}
-                                                    <th style={{ color: '#065f46' }}>Giá bán</th>
-                                                    <th style={{ color: '#065f46' }}>Số lượng</th>
-                                                    <th style={{ color: '#065f46' }}>Thao tác</th>
+                                                    <th style={{ color: '#065f46' }}>Image</th>
+                                                    <th style={{ color: '#065f46' }}>Product Name</th>
+                                                    <th style={{ color: '#065f46' }}>Brand</th>
+                                                    <th style={{ color: '#065f46' }}>Type</th>
+                                                    <th style={{ color: '#065f46' }}>Original Price</th>
+                                                    <th style={{ color: '#065f46' }}>Sale Price</th>
+                                                    <th style={{ color: '#065f46' }}>Quantity</th>
+                                                    <th style={{ color: '#065f46' }}>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {updatedConsignmentDetail.Products?.map((product, index) => (
                                                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
                                                         <td>
-                                                            {product.Product_Image && (
-                                                                <img 
-                                                                    src={product.Product_Image} 
-                                                                    alt={product.Product_Name} 
-                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                                            <div className="d-flex flex-column align-items-center">
+                                                                {(product.Image || product.Product_Image) && (
+                                                                    <img 
+                                                                        src={`/Images/${product.Image || product.Product_Image}`} 
+                                                                        alt={product.Product_Name} 
+                                                                        style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
+                                                                    />
+                                                                )}
+                                                                <input
+                                                                    type="file"
+                                                                    id={`image-upload-${index}`}
+                                                                    className="d-none"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleImageChange(index, e.target.files[0])}
                                                                 />
-                                                            )}
+                                                                <label 
+                                                                    htmlFor={`image-upload-${index}`}
+                                                                    className="btn btn-sm btn-outline-secondary"
+                                                                    style={{ fontSize: '0.75rem' }}
+                                                                >
+                                                                    <i className="bi bi-upload me-1"></i>
+                                                                    {product.Product_Image || product.ImageFile ? 'Change' : 'Upload'}
+                                                                </label>
+                                                                {(product.Product_Image || product.ImageFile) && (
+                                                                    <button 
+                                                                        className="btn btn-sm btn-outline-danger mt-1"
+                                                                        style={{ fontSize: '0.75rem' }}
+                                                                        onClick={() => handleImageChange(index, null)}
+                                                                    >
+                                                                        <i className="bi bi-trash me-1"></i>
+                                                                        Remove
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td>
                                                             <input
@@ -312,6 +356,7 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Product_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Product_Name", e.target.value)}
+                                                                required
                                                             />
                                                         </td>
                                                         <td>
@@ -319,8 +364,9 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Brand_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Brand_Name", e.target.value)}
+                                                                required
                                                             >
-                                                                <option value="">Chọn thương hiệu</option>
+                                                                <option value="">Select Brand</option>
                                                                 {brandOptions.map((brand) => (
                                                                     <option key={brand} value={brand}>{brand}</option>
                                                                 ))}
@@ -331,8 +377,9 @@ const ConsignmentDetailPage = () => {
                                                                 className="form-control"
                                                                 value={product.Product_Type_Name || ""}
                                                                 onChange={(e) => handleProductChange(index, "Product_Type_Name", e.target.value)}
+                                                                required
                                                             >
-                                                                <option value="">Chọn loại</option>
+                                                                <option value="">Select Type</option>
                                                                 {typeOptions.map((type) => (
                                                                     <option key={type} value={type}>{type}</option>
                                                                 ))}
@@ -345,19 +392,9 @@ const ConsignmentDetailPage = () => {
                                                                 value={product.Original_Price || ""}
                                                                 onChange={(e) => handleProductChange(index, "Original_Price", e.target.value)}
                                                                 min="1"
+                                                                required
                                                             />
                                                         </td>
-                                                        {shouldShowConsignmentPrice() && (
-                                                            <td>
-                                                                <input
-                                                                    type="number"
-                                                                    className="form-control"
-                                                                    value={product.Consignment_Price || ""}
-                                                                    onChange={(e) => handleProductChange(index, "Consignment_Price", e.target.value)}
-                                                                    min="1"
-                                                                />
-                                                            </td>
-                                                        )}
                                                         <td>
                                                             <input
                                                                 type="number"
@@ -365,6 +402,7 @@ const ConsignmentDetailPage = () => {
                                                                 value={product.Sale_Price || ""}
                                                                 onChange={(e) => handleProductChange(index, "Sale_Price", e.target.value)}
                                                                 min="1"
+                                                                required
                                                             />
                                                         </td>
                                                         <td>
@@ -374,6 +412,7 @@ const ConsignmentDetailPage = () => {
                                                                 value={product.Quantity || ""}
                                                                 onChange={(e) => handleProductChange(index, "Quantity", e.target.value)}
                                                                 min="1"
+                                                                required
                                                             />
                                                         </td>
                                                         <td>
@@ -387,7 +426,7 @@ const ConsignmentDetailPage = () => {
                                                                 }}
                                                             >
                                                                 <i className="bi bi-trash me-1"></i>
-                                                                Xóa
+                                                                Delete
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -405,7 +444,7 @@ const ConsignmentDetailPage = () => {
                                                 color: '#4b5563'
                                             }}
                                         >
-                                            Hủy
+                                            Cancel
                                         </button>
                                         <button 
                                             className="btn px-4 py-2"
@@ -419,12 +458,12 @@ const ConsignmentDetailPage = () => {
                                             {isUpdating ? (
                                                 <>
                                                     <span className="spinner-border spinner-border-sm me-2"></span>
-                                                    Đang lưu...
+                                                    Saving...
                                                 </>
                                             ) : (
                                                 <>
                                                     <i className="bi bi-save me-2"></i>
-                                                    Lưu thay đổi
+                                                    Save Changes
                                                 </>
                                             )}
                                         </button>
@@ -436,18 +475,18 @@ const ConsignmentDetailPage = () => {
                                         <table className="table table-hover align-middle">
                                             <thead style={{ backgroundColor: '#ecfdf5' }}>
                                                 <tr>
-                                                    <th style={{ color: '#065f46' }}>Ảnh</th>
-                                                    <th style={{ color: '#065f46' }}>Tên sản phẩm</th>
-                                                    <th style={{ color: '#065f46' }}>Thương hiệu</th>
-                                                    <th style={{ color: '#065f46' }}>Loại</th>
-                                                    <th className="text-end" style={{ color: '#065f46' }}>Giá gốc</th>
+                                                    <th style={{ color: '#065f46' }}>Image</th>
+                                                    <th style={{ color: '#065f46' }}>Product Name</th>
+                                                    <th style={{ color: '#065f46' }}>Brand</th>
+                                                    <th style={{ color: '#065f46' }}>Type</th>
+                                                    <th className="text-end" style={{ color: '#065f46' }}>Original Price</th>
                                                     {shouldShowConsignmentPrice() && (
-                                                        <th className="text-end" style={{ color: '#065f46' }}>Giá ký gửi</th>
+                                                        <th className="text-end" style={{ color: '#065f46' }}>Consignment Price</th>
                                                     )}
-                                                    <th className="text-end" style={{ color: '#065f46' }}>Giá bán</th>
-                                                    <th className="text-end" style={{ color: '#065f46' }}>Số lượng</th>
-                                                    <th style={{ color: '#065f46' }}>Trạng thái</th>
-                                                    <th style={{ color: '#065f46' }}>Thao tác</th>
+                                                    <th className="text-end" style={{ color: '#065f46' }}>Sale Price</th>
+                                                    <th className="text-end" style={{ color: '#065f46' }}>Quantity</th>
+                                                    <th style={{ color: '#065f46' }}>Status</th>
+                                                    <th style={{ color: '#065f46' }}>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -456,7 +495,7 @@ const ConsignmentDetailPage = () => {
                                                         <td>
                                                             {product.Product_Image && (
                                                                 <img 
-                                                                    src={product.Product_Image} 
+                                                                    src={`/Images/${product.Product_Image}`} 
                                                                     alt={product.Product_Name} 
                                                                     style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                                                                 />
@@ -487,7 +526,7 @@ const ConsignmentDetailPage = () => {
                                                                 }}
                                                             >
                                                                 <i className="bi bi-pencil me-1"></i>
-                                                                Sửa
+                                                                Edit
                                                             </button>
                                                             <button
                                                                 className="btn btn-sm px-3 py-1"
@@ -499,7 +538,7 @@ const ConsignmentDetailPage = () => {
                                                                 }}
                                                             >
                                                                 <i className="bi bi-trash me-1"></i>
-                                                                Xóa
+                                                                Delete
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -518,7 +557,7 @@ const ConsignmentDetailPage = () => {
                                             }}
                                         >
                                             <i className="bi bi-trash me-2"></i>
-                                            Xóa đơn ký gửi
+                                            Delete Consignment
                                         </button>
                                     </div>
                                 </div>
@@ -563,7 +602,7 @@ const ConsignmentDetailPage = () => {
                                             color: '#ffffff'
                                         }}
                                     >
-                                        Đóng
+                                        Close
                                     </button>
                                 </div>
                             </div>
@@ -607,7 +646,7 @@ const ConsignmentDetailPage = () => {
                                             color: '#4b5563'
                                         }}
                                     >
-                                        Hủy
+                                        Cancel
                                     </button>
                                     <button
                                         type="button"
@@ -622,7 +661,7 @@ const ConsignmentDetailPage = () => {
                                             color: '#ffffff'
                                         }}
                                     >
-                                        Xác nhận
+                                        Confirm
                                     </button>
                                 </div>
                             </div>
