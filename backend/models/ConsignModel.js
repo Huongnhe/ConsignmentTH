@@ -18,7 +18,7 @@ const getUserProducts = async (userId) => {
         JOIN th_brand b ON th_product.Brand_id = b.ID
         JOIN th_product_type t ON th_product.Product_type_id = t.ID
         WHERE th_consignment_ticket.User_id = ?
-        ORDER BY TicketID DESC;
+        ORDER BY TicketID DESC,th_product.ID DESC;
     `;
 
     const [rows] = await db.execute(query, [userId]);

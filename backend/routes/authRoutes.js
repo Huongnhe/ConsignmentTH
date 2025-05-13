@@ -4,7 +4,7 @@ const { fetchUserProducts } = require("../controllers/consignController");
 const authenticateUser = require("../middeleware/authMiddleware");
 const { createConsignController } = require("../controllers/CreateConsignController");
 const { fetchConsignmentDetail } = require("../controllers/detailConsignController");
-const { updateConsignmentProduct } = require("../controllers/updateConsignmentProduct");
+const { updateConsignmentProduct } = require("../controllers/updateConsignmentProductController");
 const { deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
 const saleController = require("../controllers/orderConsignController");
 
@@ -27,7 +27,7 @@ router.post("/login", login);
 router.post("/consigns", authenticateUser, fetchUserProducts);
 router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
-router.post("/consignmentUpdate/:consignmentId/products/:productId", authenticateUser, updateConsignmentProduct);
+router.put("/consignmentUpdate/:consignmentId/products/:productId", authenticateUser, updateConsignmentProduct);
 router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
 router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
 

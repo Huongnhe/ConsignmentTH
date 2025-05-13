@@ -71,36 +71,78 @@ export const AuthDetailProvider = ({ children }) => {
 
     // Hàm cập nhật sản phẩm trong đơn ký gửi
     const updateConsignment = async (consignmentId, productId, updatedData) => {
-        console.log("[DEBUG] Params received:", { consignmentId, productId, updatedData });
+        console.log("[DEBUG] Update params:", { consignmentId, productId, updatedData });
         
-        if (!productId) {
-            throw new Error('Missing productId');
+        const token = localStorage.getItem("token");
+        if (!token) {
+            const errorMsg = "Vui lòng đăng nhập lại";
+            setError(errorMsg);
+            throw new Error(errorMsg);
         }
-    
+
+        if (!productId) {
+            const errorMsg = "Thiếu ID sản phẩm";
+            setError(errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        setLoading(true);
+        setError(null);
+        
         try {
             const result = await updateConsignmentAPI(
-                localStorage.getItem("token"),
+                token,
                 consignmentId,
-                String(productId), // Đảm bảo là string
+                productId,
                 updatedData
             );
+    
+            console.log("API Response:", result); // Thêm dòng này
             
-            // Cập nhật state nếu cần
-            setConsignmentDetail(prev => ({
-                ...prev,
-                Products: prev.Products.map(p => 
-                    p.Product_id === productId ? { ...p, ...updatedData } : p
-                )
-            }));
+            // Cập nhật state một cách an toàn
+            setConsignmentDetail(prev => {
+                if (!prev || !prev.Products) return prev;
+                
+                return {
+                    ...prev,
+                    Products: prev.Products.map(p => 
+                        p.Product_id === productId ? { ...p, ...updatedData } : p
+                    )
+                };
+            });
             
             return result;
         } catch (error) {
-            console.error("Update Error:", {
+            console.error("Full Error Details:", {
                 message: error.message,
-                requestData: updatedData,
-                productId
+                response: {
+                    status: error.response?.status,
+                    data: error.response?.data,
+                    headers: error.response?.headers
+                },
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    data: error.config?.data
+                }
             });
-            throw error;
+
+            let errorMsg = "Cập nhật thất bại";
+            
+            if (error.response?.data?.errors) {
+                // Xử lý lỗi validation từ server
+                errorMsg = Object.entries(error.response.data.errors)
+                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                    .join('\n');
+            } else if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            }
+
+            setError(errorMsg);
+            throw new Error(errorMsg);
+
+        } finally {
+            setLoading(false);
         }
     };
     return (

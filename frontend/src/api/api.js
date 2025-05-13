@@ -230,9 +230,9 @@ export const deleteConsignmentAPI = async (token, consignmentId) => {
 
 export const updateConsignmentAPI = async (token, consignmentId, productId, updatedData) => {
     try {
-        const response = await axios.post(
+        const response = await axios.put(
             `${API_URL}/consignmentUpdate/${consignmentId}/products/${productId}`,
-            {updatedData},
+            updatedData,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
