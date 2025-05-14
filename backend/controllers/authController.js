@@ -3,8 +3,8 @@ const {
     getUserByEmail, 
     createUser, 
     registerWithOTP, 
-    verifyAndCreateUser,
-    isEmailVerified
+    getLatestOTPRecord,
+    verifyOTPRecord
 } = require("../models/userModel");
 require("dotenv").config();
 
@@ -64,10 +64,36 @@ async function registerWithOTPStep2(req, res) {
     try {
         const { username, email, password, otp } = req.body;
 
-        const user = await verifyAndCreateUser(username, email, password, otp);
+        // Xác thực OTP trước
+        const otpRecord = await getLatestOTPRecord(email);
+        if (!otpRecord || otpRecord.OTP !== otp || new Date(otpRecord.Expires_At) < new Date()) {
+            return res.status(400).json({ message: "Mã OTP không hợp lệ hoặc đã hết hạn" });
+        }
+
+        // Kiểm tra email đã tồn tại chưa
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ message: "Email đã tồn tại trong hệ thống" });
+        }
+
+        // Tạo user mới
+        const user = await createUser(username, email, password);
+        
+        // Đánh dấu email đã xác thực
+        await verifyOTPRecord(email);
+        
+        // Tạo token
+        const token = generateToken(user);
+
         return res.status(201).json({ 
             message: "Đăng ký thành công!",
-            user
+            token,
+            user: {
+                id: user.ID,
+                username: user.User_name,
+                email: user.Email,
+                account: user.Account
+            }
         });
 
     } catch (error) {
@@ -92,14 +118,6 @@ async function login(req, res) {
         // Kiểm tra mật khẩu
         if (user.Password_User !== password) {
             return res.status(401).json({ message: "Sai mật khẩu" });
-        }
-
-        // Kiểm tra email đã xác thực (nếu cần)
-        const verified = await isEmailVerified(email);
-        if (!verified) {
-            return res.status(403).json({ 
-                message: "Vui lòng xác thực email trước khi đăng nhập" 
-            });
         }
 
         // Tạo token

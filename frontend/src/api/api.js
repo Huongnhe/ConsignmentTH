@@ -26,6 +26,58 @@ export const registerUser = async (userData) => {
     }
 };
 
+// Register with OTP - Step 1: Send OTP
+export const registerWithOTPStep1API = async (username, email, password) => {
+    try {
+        const response = await axios.post(`${API_URL}/register/otp`, { 
+            username, 
+            email, 
+            password 
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error sending OTP:", error.response?.data || error.message);
+        throw error;
+    }
+};
+
+// Register with OTP - Step 2: Verify OTP
+export const registerWithOTPStep2API = async (username, email, password, otp) => {
+    try {
+        const response = await axios.post(`${API_URL}/register/otp/verify`, {
+            username,
+            email,
+            password,
+            otp
+        }, {
+            // Thêm headers nếu cần
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log("Full server response:", response.data); // Debug log
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || "Xác thực thất bại");
+        }
+
+        if (!response.data.token || !response.data.user) {
+            throw new Error("Thiếu dữ liệu token hoặc user trong response");
+        }
+
+        return response.data;
+
+    } catch (error) {
+        console.error("Error details:", {
+            message: error.message,
+            response: error.response?.data,
+            config: error.config
+        });
+        throw error;
+    }
+};
+
 // Lấy danh sách sản phẩm của người dùng
 export const getUserProducts = async (token) => {
     try {

@@ -1,39 +1,182 @@
-import React, { useState, useContext, useEffect } from "react";
-import { AuthContext } from "../context/AuthContext";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const RegisterPage = () => {
-    const { register, message } = useContext(AuthContext);
+    const { registerWithOTPStep1, registerWithOTPStep2 } = useContext(AuthContext);
     const navigate = useNavigate();
+    
+    // Form state
     const [formData, setFormData] = useState({
         username: "",
         email: "",
         password: "",
     });
+    
+    // OTP verification state
+    const [otp, setOtp] = useState("");
+    const [step, setStep] = useState(1); // 1: Registration, 2: OTP Verification
+    const [message, setMessage] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [countdown, setCountdown] = useState(0);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.tzarget.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = async (e) => {
+    const handleOTPChange = (e) => {
+        setOtp(e.target.value);
+    };
+
+    // Validate email format
+    const validateEmail = (email) => {
+        const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+        return re.test(email);
+    };
+
+    // Validate username (no spaces or special characters)
+    const validateUsername = (username) => {
+        const re = /^[a-zA-Z0-9]+$/;
+        return re.test(username);
+    };
+
+    // Handle OTP sending (step 1)
+    const handleSendOTP = async (e) => {
         e.preventDefault();
-        const result = await register(formData);
+        setIsLoading(true);
+        setMessage("");
 
-        if (result && result.success) {
-            setTimeout(() => {
-                navigate("/login");
-            }, 1500);
+        // Validate inputs
+        if (!formData.username || !formData.email || !formData.password) {
+            setMessage("Please fill in all fields");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!validateUsername(formData.username)) {
+            setMessage("Username cannot contain spaces or special characters");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!validateEmail(formData.email)) {
+            setMessage("Invalid email format (e.g., example@gmail.com)");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const result = await registerWithOTPStep1(
+                formData.username,
+                formData.email,
+                formData.password
+            );
+            
+            setMessage(result.message || "OTP code has been sent to your email (valid for 5 minutes)");
+            setStep(2); // Move to OTP verification step
+            startCountdown(300); // Start 300s countdown (5 minutes)
+        } catch (error) {
+            setMessage(error.message || "Failed to send OTP. Please try again");
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    useEffect(() => {
-        if (message.includes("success")) {
-            setTimeout(() => {
-                navigate("/login");
-            }, 1500);
+    // Handle OTP verification (step 2)
+    const handleVerifyOTP = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setMessage("");
+
+        // Validate OTP
+        if (!otp || otp.length !== 6) {
+            setMessage("Please enter a 6-digit OTP code");
+            setIsLoading(false);
+            return;
         }
-    }, [message, navigate]);
+
+        try {
+            const result = await registerWithOTPStep2(
+                formData.username,
+                formData.email,
+                formData.password,
+                otp
+            );
+            
+            setMessage("Registration successful! Redirecting...");
+            
+            // Add delay before redirect
+            setTimeout(() => {
+                navigate("/login", {
+                    state: {
+                        registeredEmail: formData.email,
+                        message: "Registration successful. Please login."
+                    }
+                });
+            }, 2000);
+
+        } catch (error) {
+            let errorMsg = error.message;
+            
+            if (error.response) {
+                errorMsg = error.response.data.message || errorMsg;
+                
+                if (errorMsg.includes("Email already exists")) {
+                    setStep(1);
+                }
+            } else if (error.request) {
+                errorMsg = "No response from server";
+            }
+            
+            setMessage(errorMsg);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Resend OTP
+    const handleResendOTP = async () => {
+        setIsLoading(true);
+        setMessage("");
+
+        try {
+            const result = await registerWithOTPStep1(
+                formData.username,
+                formData.email,
+                formData.password
+            );
+            
+            setMessage("New OTP code sent (valid for 5 minutes)");
+            startCountdown(300); // Reset countdown to 300s (5 minutes)
+        } catch (error) {
+            setMessage(error.message || "Failed to resend OTP");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Countdown timer (format minutes:seconds)
+    const startCountdown = (seconds) => {
+        setCountdown(seconds);
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    // Format countdown time
+    const formatCountdown = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
     return (
         <div 
@@ -45,7 +188,6 @@ const RegisterPage = () => {
                 position: "relative"
             }}
         >
-            {/* Blur overlay giống trang đăng nhập */}
             <div
                 className="position-absolute top-0 start-0 w-100 h-100"
                 style={{
@@ -54,7 +196,6 @@ const RegisterPage = () => {
                 }}
             ></div>
 
-            {/* Register card - giống với login về kích thước và style */}
             <div
                 className="card p-4 border-0 shadow-lg position-relative"
                 style={{
@@ -65,12 +206,13 @@ const RegisterPage = () => {
                     overflow: "hidden"
                 }}
             >
-                {/* Luxury brand header giống trang đăng nhập */}
                 <div className="text-center mb-4">
                     <h2 className="text-dark mb-1" style={{ fontFamily: "'Playfair Display', serif", fontWeight: "700" }}>
-                        TH WORLD
+                        {step === 1 ? "CREATE ACCOUNT" : "OTP VERIFICATION"}
                     </h2>
-                    <p className="text-muted small" style={{ letterSpacing: "2px" }}>LUXURY COLLECTIONS</p>
+                    <p className="text-muted small">
+                        {step === 1 ? "Create an account to get started" : `OTP code sent to ${formData.email} (valid for 5 minutes)`}
+                    </p>
                 </div>
 
                 {message && (
@@ -79,85 +221,135 @@ const RegisterPage = () => {
                     </div>
                 )}
 
-                {/* Form */}
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                        <label htmlFor="username" className="form-label small text-uppercase text-muted">
-                            Username
-                        </label>
-                        <input
-                            type="text"
-                            name="username"
-                            id="username"
-                            className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-                            placeholder="Enter your username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            required
-                            style={{
-                                backgroundColor: "rgba(255, 240, 220, 0.3)",
-                                borderBottom: "1px solid #ddd !important"
-                            }}
-                        />
-                    </div>
+                {step === 1 ? (
+                    // Registration form (step 1)
+                    <form onSubmit={handleSendOTP}>
+                        <div className="mb-3">
+                            <label htmlFor="username" className="form-label small text-uppercase text-muted">
+                                Username
+                            </label>
+                            <input
+                                type="text"
+                                name="username"
+                                id="username"
+                                className="form-control border-0 border-bottom rounded-0 py-3 px-0"
+                                placeholder="Enter username (no spaces or special characters)"
+                                value={formData.username}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    backgroundColor: "rgba(255, 240, 220, 0.3)",
+                                    borderBottom: "1px solid #ddd !important"
+                                }}
+                            />
+                        </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="email" className="form-label small text-uppercase text-muted">
-                            Email Address
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            id="email"
-                            className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-                            placeholder="your@email.com"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            style={{
-                                backgroundColor: "rgba(255, 240, 220, 0.3)",
-                                borderBottom: "1px solid #ddd !important"
-                            }}
-                        />
-                    </div>
+                        <div className="mb-3">
+                            <label htmlFor="email" className="form-label small text-uppercase text-muted">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                id="email"
+                                className="form-control border-0 border-bottom rounded-0 py-3 px-0"
+                                placeholder="example@gmail.com"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    backgroundColor: "rgba(255, 240, 220, 0.3)",
+                                    borderBottom: "1px solid #ddd !important"
+                                }}
+                            />
+                        </div>
 
-                    <div className="mb-4">
-                        <label htmlFor="password" className="form-label small text-uppercase text-muted">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            name="password"
-                            id="password"
-                            className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
+                        <div className="mb-4">
+                            <label htmlFor="password" className="form-label small text-uppercase text-muted">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                name="password"
+                                id="password"
+                                className="form-control border-0 border-bottom rounded-0 py-3 px-0"
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    backgroundColor: "rgba(255, 240, 220, 0.3)",
+                                    borderBottom: "1px solid #ddd !important"
+                                }}
+                            />
+                        </div>
+                        
+                        <button
+                            type="submit"
+                            className="btn btn-dark w-100 py-3 mb-3"
+                            disabled={isLoading}
                             style={{
-                                backgroundColor: "rgba(255, 240, 220, 0.3)",
-                                borderBottom: "1px solid #ddd !important"
+                                letterSpacing: "1px",
+                                fontWeight: "500",
+                                transition: "all 0.3s ease"
                             }}
-                        />
-                    </div>
-                    
-                    {/* Submit Button - giống style với nút đăng nhập */}
-                    <button
-                        type="submit"
-                        className="btn btn-dark w-100 py-3 mb-3"
-                        style={{
-                            letterSpacing: "1px",
-                            fontWeight: "500",
-                            transition: "all 0.3s ease"
-                        }}
-                        onMouseOver={(e) => e.target.style.backgroundColor = "#333"}
-                        onMouseOut={(e) => e.target.style.backgroundColor = "#000"}
-                    >
-                        REGISTER NOW
-                    </button>
-                </form>
+                        >
+                            {isLoading ? "SENDING OTP..." : "REGISTER"}
+                        </button>
+                    </form>
+                ) : (
+                    // OTP verification form (step 2)
+                    <form onSubmit={handleVerifyOTP}>
+                        <div className="mb-4">
+                            <label htmlFor="otp" className="form-label small text-uppercase text-muted">
+                                OTP Code (6 digits)
+                            </label>
+                            <input
+                                type="text"
+                                id="otp"
+                                className="form-control border-0 border-bottom rounded-0 py-3 px-0 text-center"
+                                placeholder="Enter OTP code"
+                                value={otp}
+                                onChange={handleOTPChange}
+                                maxLength="6"
+                                required
+                                style={{
+                                    backgroundColor: "rgba(255, 240, 220, 0.3)",
+                                    borderBottom: "1px solid #ddd !important",
+                                    letterSpacing: "5px",
+                                    fontSize: "1.2rem"
+                                }}
+                            />
+                        </div>
 
-                {/* Divider giống trang đăng nhập */}
+                        <button
+                            type="submit"
+                            className="btn btn-dark w-100 py-3 mb-3"
+                            disabled={isLoading}
+                            style={{
+                                letterSpacing: "1px",
+                                fontWeight: "500",
+                                transition: "all 0.3s ease"
+                            }}
+                        >
+                            {isLoading ? "VERIFYING..." : "VERIFY OTP"}
+                        </button>
+
+                        <div className="text-center mt-3">
+                            <p className="small text-muted">
+                                Didn't receive code?{" "}
+                                <button 
+                                    className="btn btn-link p-0 text-decoration-none"
+                                    onClick={handleResendOTP}
+                                    disabled={countdown > 0 || isLoading}
+                                >
+                                    Resend Code {countdown > 0 ? `(${formatCountdown(countdown)})` : ""}
+                                </button>
+                            </p>
+                        </div>
+                    </form>
+                )}
+
                 <div className="position-relative my-4">
                     <hr className="my-0" />
                     <span
@@ -168,7 +360,6 @@ const RegisterPage = () => {
                     </span>
                 </div>
 
-                {/* Back to Login Button - giống style với nút "CREATE AN ACCOUNT" */}
                 <button
                     className="btn btn-outline-dark w-100 py-2"
                     onClick={() => navigate("/login")}
@@ -176,14 +367,8 @@ const RegisterPage = () => {
                         letterSpacing: "1px",
                         transition: "all 0.3s ease"
                     }}
-                    onMouseOver={(e) => {
-                        e.target.style.backgroundColor = "#f8f9fa";
-                    }}
-                    onMouseOut={(e) => {
-                        e.target.style.backgroundColor = "transparent";
-                    }}
                 >
-                    ALREADY HAVE AN ACCOUNT? SIGN IN
+                    ALREADY HAVE AN ACCOUNT? LOGIN NOW
                 </button>
             </div>
         </div>

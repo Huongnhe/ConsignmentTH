@@ -1,6 +1,8 @@
 import { createContext, useState, useEffect } from "react";
-import {
-  loginUser,
+import { 
+    loginUser,
+    registerWithOTPStep1API,
+    registerWithOTPStep2API
 } from "../api/api";
 
 export const AuthContext = createContext();
@@ -48,8 +50,56 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const registerWithOTPStep1 = async (username, email, password) => {
+        try {
+            const data = await registerWithOTPStep1API(username, email, password);
+            return data;
+        } catch (error) {
+            console.error("Error in OTP step 1:", error);
+            throw error;
+        }
+    };
+
+    const registerWithOTPStep2 = async (username, email, password, otp) => {
+        try {
+            const data = await registerWithOTPStep2API(username, email, password, otp);
+            
+            console.log("Data received:", data); // Debug log
+
+            if (!data.success) {
+                throw new Error(data.message || "Xác thực OTP thất bại");
+            }
+
+            if (!data.token || !data.user) {
+                throw new Error("Dữ liệu người dùng không hợp lệ từ server");
+            }
+
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setUser(data.user);
+            
+            return data.user;
+
+        } catch (error) {
+            console.error("Full error in OTP step 2:", {
+                error: error,
+                message: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, message, loading }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            login, 
+            logout, 
+            message, 
+            loading,
+            registerWithOTPStep1,
+            registerWithOTPStep2
+        }}>
             {children}
         </AuthContext.Provider>
     );

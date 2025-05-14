@@ -10,7 +10,10 @@
     async function createUser(username, email, hashedPassword) {
         const sql = "INSERT INTO th_user (User_name, Email, Password_User, Account) VALUES (?, ?, ?, 'Customer')";
         const [result] = await pool.execute(sql, [username, email, hashedPassword]);
-        return result;
+        
+        // Lấy lại thông tin user vừa tạo
+        const [rows] = await pool.execute("SELECT * FROM th_user WHERE ID = ?", [result.insertId]);
+        return rows[0];
     }
 
 
@@ -75,10 +78,16 @@
             throw new Error("Mã OTP không hợp lệ hoặc đã hết hạn");
         }
 
-        // 2. Tạo user mới
+        // 2. Kiểm tra email đã tồn tại chưa (thêm bước này)
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+            throw new Error("Email đã tồn tại trong hệ thống");
+        }
+
+        // 3. Tạo user mới
         const user = await createUser(username, email, password);
         
-        // 3. Đánh dấu email đã xác thực
+        // 4. Đánh dấu email đã xác thực
         await verifyOTPRecord(email);
         
         return user;
