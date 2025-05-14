@@ -13,7 +13,7 @@ const RegisterPage = () => {
     });
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setFormData({ ...formData, [e.target.name]: e.tzarget.value });
     };
 
     const handleSubmit = async (e) => {

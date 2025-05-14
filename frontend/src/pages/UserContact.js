@@ -12,7 +12,7 @@ const ContactForm = () => {
             <div className="card border-0 shadow-sm rounded-lg overflow-hidden">
               <div className="card-header py-4" style={{ backgroundColor: '#d4a762' }}>
                 <h2 className="text-center text-white mb-0">
-                  <i className="bi bi-envelope-paper me-2"></i>
+                  <i className="bi bi-envelope-paper me-z2"></i>
                   Contact Us
                 </h2>
               </div>

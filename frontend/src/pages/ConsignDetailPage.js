@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuthDetail } from "../context/AuthDetail";
-import { ConsignContext, ConsignProvider } from "../context/AuthConsign";
+import { useAuthDetail } from "../context/DetailContext";
+import { ConsignContext, ConsignProvider } from "../context/ConsignContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./MenuUser";
 
@@ -81,7 +81,7 @@ const ConsignmentDetailPage = () => {
                 Original_price: Number(product.Original_Price),
                 Sale_price: Number(product.Sale_Price),
                 Quantity: Number(product.Quantity),
-                Product_Image: product.Product_Image || null
+                Product_Image: product.Product_Image || product.Image || '' // Chỉ lấy tên file
             };
 
             if (!updatedData.Product_name) {

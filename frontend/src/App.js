@@ -14,10 +14,10 @@ import InvoiceDetailPage from './pages/InvoiceDetailPage';
 import Footer from "./pages/Footer";
 
 import { AuthProvider, AuthContext } from "./context/AuthContext";
-import { ConsignProvider } from "./context/AuthConsign";
-import { AuthDetailProvider } from "./context/AuthDetail";
-import { AdminConsignmentProvider } from "./context/AuthAdminConsign";
-import { ProductSearchProvider } from "./context/AuthOrder";
+import { ConsignProvider } from "./context/ConsignContext";
+import { AuthDetailProvider } from "./context/DetailContext";
+import { AdminConsignmentProvider } from "./context/AdminConsignContext";
+import { ProductSearchProvider } from "./context/OrderContext";
 
 const PrivateRoute = ({ element, requiredRole }) => {
   const { user } = useContext(AuthContext);

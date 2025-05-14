@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import SidebarMenu from './MenuAdmin';
-import { useProductSearch } from '../context/AuthOrder';
+import { useProductSearch } from '../context/OrderContext';
 
 function InvoiceDetailPage() {
     const { orderId } = useParams();

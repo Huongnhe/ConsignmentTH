@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useProductSearch } from '../context/AuthOrder';
+import { useProductSearch } from '../context/OrderContext';
 import { createOrdersAPI, getInvoiceAPI } from '../api/api';
 import { useNavigate } from 'react-router-dom';
 import SidebarMenu from './MenuAdmin';
