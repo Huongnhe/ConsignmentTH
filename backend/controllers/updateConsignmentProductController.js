@@ -30,7 +30,7 @@ const updateConsignmentProduct = async (req, res) => {
             Consignment_price: parseFloat(req.body.Consignment_price),
             Sale_price: parseFloat(req.body.Sale_price),
             Quantity: parseInt(req.body.Quantity),
-            Image: req.file ? req.file.path : null
+            Product_Image: req.body.Product_Image?.trim() || null
         };
 
         // Additional validation

@@ -60,10 +60,11 @@ const ConsignmentDetailPage = () => {
             updatedProducts[index].Image = file.name;
             updatedProducts[index].ImageFile = file;
             updatedProducts[index].Product_Image = file.name; 
-         } else {
-            updatedProducts[index].Image = '';
+        } else {
+            // Thay đổi ở đây: set thành null thay vì chuỗi rỗng
+            updatedProducts[index].Image = null;
             updatedProducts[index].ImageFile = null;
-            updatedProducts[index].Product_Image = '';
+            updatedProducts[index].Product_Image = null;
         }
         setUpdatedConsignmentDetail({
             ...updatedConsignmentDetail,
@@ -80,8 +81,7 @@ const ConsignmentDetailPage = () => {
                 Original_price: Number(product.Original_Price),
                 Sale_price: Number(product.Sale_Price),
                 Quantity: Number(product.Quantity),
-                Image: product.Product_Image ? `../Images/${product.Product_Image}` : null,
-                ImageFile: product.ImageFile || null
+                Product_Image: product.Product_Image || null
             };
 
             if (!updatedData.Product_name) {
@@ -129,10 +129,9 @@ const ConsignmentDetailPage = () => {
                             Original_price: Number(product.Original_Price),
                             Sale_price: Number(product.Sale_Price),
                             Quantity: Number(product.Quantity),
-                            Image: product.Product_Image ? `/Images/${product.Product_Image}` : null,
-                            ImageFile: product.ImageFile || null
+                            Product_Image: product.Product_Image || product.Image || '' // Chỉ lấy tên file
                         };
-                        
+
                         return updateConsignment(
                             consignmentDetail.Consignment_ID,
                             product.Product_ID,
@@ -168,7 +167,6 @@ const ConsignmentDetailPage = () => {
             }
         );
     };
-
     const handleDelete = async () => {
         showModal(
             "Confirm Delete",
@@ -318,7 +316,7 @@ const ConsignmentDetailPage = () => {
                                                             <div className="d-flex flex-column align-items-center">
                                                                 {(product.Image || product.Product_Image) && (
                                                                     <img 
-                                                                        src={`/Images/${product.Image || product.Product_Image}`} 
+                                                                        src={`../Images/${product.Image || product.Product_Image}`} 
                                                                         alt={product.Product_Name} 
                                                                         style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                                                                     />
@@ -495,7 +493,7 @@ const ConsignmentDetailPage = () => {
                                                         <td>
                                                             {product.Product_Image && (
                                                                 <img 
-                                                                    src={`/Images/${product.Product_Image}`} 
+                                                                    src={`../Images/${product.Product_Image}`} 
                                                                     alt={product.Product_Name} 
                                                                     style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                                                                 />
