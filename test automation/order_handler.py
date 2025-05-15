@@ -28,16 +28,34 @@ class OrderHandler:
             search_input.send_keys(order_case["product_name"])
             sleep(2)
             
-            # Check if product appears
+            # Check if product appears in suggestions dropdown
             try:
-                product_row = self.wait.until(EC.presence_of_element_located(
-                    (By.XPATH, f"//td[contains(., '{order_case['product_name']}')]/..")))
+                product_item = self.wait.until(EC.presence_of_element_located(
+                    (By.XPATH, f"//li[contains(., '{order_case['product_name']}')]")))
                 print(f"-> [INFO] Tìm thấy sản phẩm: {order_case['product_name']}")
                 
-                # Click add button
-                add_button = product_row.find_element(By.XPATH, ".//button[contains(., 'Thêm')]")
-                add_button.click()
+                # Check product status (only "Received" can be added)
+                try:
+                    status_badge = product_item.find_element(By.XPATH, ".//span[contains(@class, 'badge')]")
+                    if "bg-success" not in status_badge.get_attribute("class"):
+                        print(f"-> [VALIDATE] Sản phẩm không có sẵn (status không phải 'Received')")
+                        return False
+                except NoSuchElementException:
+                    print("-> [VALIDATE] Không xác định được trạng thái sản phẩm")
+                    return False
+                
+                # Click on product item to add to order
+                product_item.click()
                 sleep(1)
+                
+                # Verify product was added to selected products table
+                try:
+                    self.wait.until(EC.presence_of_element_located(
+                        (By.XPATH, f"//table[contains(@class, 'table')]//td[contains(., '{order_case['product_name']}')]")))
+                    print("-> [INFO] Sản phẩm đã được thêm vào đơn hàng")
+                except TimeoutException:
+                    print("-> [VALIDATE] Sản phẩm không được thêm vào đơn hàng")
+                    return False
                 
                 # Fill customer info
                 customer_name = self.wait.until(EC.presence_of_element_located(
@@ -59,21 +77,56 @@ class OrderHandler:
                 submit_button.click()
                 sleep(3)
                 
-                # Check for success or error messages
+                # Handle confirmation modal
                 try:
-                    # Check for success message
-                    success_alert = self.wait.until(EC.presence_of_element_located(
-                        (By.XPATH, "//div[contains(@class, 'alert-success')]")))
-                    print(f"-> [SUCCESS] Tạo đơn thành công: {success_alert.text}")
-                    return True
+                    # Wait for modal to appear
+                    modal = self.wait.until(EC.visibility_of_element_located(
+                        (By.XPATH, "//div[contains(@class, 'modal fade show d-block')]")))
+                    print("-> [INFO] Modal xác nhận đơn hàng xuất hiện")
+                    
+                    # Verify modal content
+                    try:
+                        customer_name_in_modal = modal.find_element(By.XPATH, ".//div[contains(., 'Khách hàng:')]")
+                        customer_phone_in_modal = modal.find_element(By.XPATH, ".//div[contains(., 'Số điện thoại:')]")
+                        product_in_modal = modal.find_element(By.XPATH, f".//li[contains(., '{order_case['product_name']}')]")
+                        print("-> [INFO] Thông tin đơn hàng hiển thị chính xác trong modal")
+                    except NoSuchElementException:
+                        print("-> [VALIDATE] Thông tin đơn hàng không hiển thị đúng trong modal")
+                        return False
+                    
+                    # Click confirm button in modal
+                    confirm_button = self.wait.until(EC.element_to_be_clickable(
+                        (By.XPATH, "//div[@class='modal fade show d-block']//button[contains(., 'Xác nhận')]")))
+                    confirm_button.click()
+                    print("-> [INFO] Đã bấm xác nhận đơn hàng trong modal")
+                    sleep(3)
+                    
+                    # Check for success or error messages after confirmation
+                    try:
+                        # Check for success message
+                        success_alert = self.wait.until(EC.presence_of_element_located(
+                            (By.XPATH, "//div[contains(@class, 'alert-success')]")))
+                        print(f"-> [SUCCESS] Tạo đơn thành công: {success_alert.text}")
+                        
+                        # Check if order ID is displayed in success message
+                        if "Mã đơn hàng:" in success_alert.text:
+                            return True
+                        else:
+                            print("-> [VALIDATE] Thông báo thành công nhưng không có mã đơn hàng")
+                            return False
+                            
+                    except TimeoutException:
+                        # Check for error messages
+                        error_messages = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'alert-danger')]")
+                        if error_messages:
+                            for error in error_messages:
+                                print(f"-> [VALIDATE ERROR] {error.text}")
+                        else:
+                            print("-> [VALIDATE] Không tìm thấy thông báo thành công hoặc lỗi cụ thể sau khi xác nhận")
+                        return False
+                    
                 except TimeoutException:
-                    # Check for error messages
-                    error_messages = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'error') or contains(@class, 'invalid') or contains(@class, 'alert-danger')]")
-                    if error_messages:
-                        for error in error_messages:
-                            print(f"-> [VALIDATE ERROR] {error.text}")
-                    else:
-                        print("-> [VALIDATE] Không tìm thấy thông báo thành công hoặc lỗi cụ thể")
+                    print("-> [VALIDATE] Modal xác nhận không xuất hiện sau khi bấm tạo đơn")
                     return False
                 
             except (NoSuchElementException, TimeoutException):
@@ -94,7 +147,7 @@ class OrderHandler:
             order_id_input = self.wait.until(EC.presence_of_element_located(
                 (By.XPATH, "//input[@placeholder='Nhập ID đơn hàng']")))
             order_id_input.clear()
-            order_id_input.send_keys(order_id)
+            order_id_input.send_keys(str(order_id))
             
             # Click search button
             search_button = self.wait.until(EC.element_to_be_clickable(

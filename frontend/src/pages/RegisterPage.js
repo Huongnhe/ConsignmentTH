@@ -7,27 +7,26 @@ const RegisterPage = () => {
     const { registerWithOTPStep1, registerWithOTPStep2 } = useContext(AuthContext);
     const navigate = useNavigate();
     
-    // Form state
     const [formData, setFormData] = useState({
         username: "",
         email: "",
         password: "",
     });
     
-    // OTP verification state
     const [otp, setOtp] = useState("");
-    const [step, setStep] = useState(1); // 1: Registration, 2: OTP Verification
+    const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [countdown, setCountdown] = useState(0);
     const [redirectTimer, setRedirectTimer] = useState(null);
-    const [showToast, setShowToast] = useState(false);
-    const [toastConfig, setToastConfig] = useState({
+    
+    // State cho modal thông báo
+    const [showModal, setShowModal] = useState(false);
+    const [modalConfig, setModalConfig] = useState({
         title: "",
         message: "",
-        bg: "danger"
+        variant: "danger"
     });
 
-    // Clear timeout khi component unmount
     useEffect(() => {
         return () => {
             if (redirectTimer) {
@@ -36,14 +35,17 @@ const RegisterPage = () => {
         };
     }, [redirectTimer]);
 
-    const displayToast = (title, message, bg = "danger") => {
-        setToastConfig({
+    const displayModal = (title, message, variant = "danger") => {
+        setModalConfig({
             title,
             message,
-            bg
+            variant
         });
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
     };
 
     const handleChange = (e) => {
@@ -55,38 +57,34 @@ const RegisterPage = () => {
         setOtp(e.target.value);
     };
 
-    // Validate email format
     const validateEmail = (email) => {
         const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
         return re.test(email);
     };
 
-    // Validate username (no spaces or special characters)
     const validateUsername = (username) => {
         const re = /^[a-zA-Z0-9]+$/;
         return re.test(username);
     };
 
-    // Handle OTP sending (step 1)
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Validate inputs
         if (!formData.username || !formData.email || !formData.password) {
-            displayToast("Error", "Please fill in all fields");
+            displayModal("Error", "Please fill in all fields");
             setIsLoading(false);
             return;
         }
 
         if (!validateUsername(formData.username)) {
-            displayToast("Error", "Username cannot contain spaces or special characters");
+            displayModal("Error", "Username cannot contain spaces or special characters");
             setIsLoading(false);
             return;
         }
 
         if (!validateEmail(formData.email)) {
-            displayToast("Error", "Invalid email format (e.g., example@gmail.com)");
+            displayModal("Error", "Invalid email format (e.g., example@gmail.com)");
             setIsLoading(false);
             return;
         }
@@ -98,24 +96,31 @@ const RegisterPage = () => {
                 formData.password
             );
             
-            displayToast("Success", result.message || "OTP code has been sent to your email (valid for 5 minutes)", "success");
+            displayModal("Success", result.message || "OTP code has been sent to your email (valid for 5 minutes)", "success");
             setStep(2);
-            startCountdown(300); // Start 300s countdown (5 minutes)
+            startCountdown(300);
         } catch (error) {
-            displayToast("Error", error.message || "Failed to send OTP. Please try again");
+            let errorMessage = "Failed to send OTP. Please try again";
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+                if (errorMessage.toLowerCase().includes("email already exists")) {
+                    setStep(1);
+                }
+            }
+            
+            displayModal("Error", errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Handle OTP verification (step 2)
     const handleVerifyOTP = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Validate OTP
         if (!otp || otp.length !== 6) {
-            displayToast("Error", "Please enter a 6-digit OTP code");
+            displayModal("Error", "Please enter a 6-digit OTP code");
             setIsLoading(false);
             return;
         }
@@ -128,9 +133,8 @@ const RegisterPage = () => {
                 otp
             );
             
-            displayToast("Success", "Registration successful! Redirecting...", "success");
+            displayModal("Success", "Registration successful! Redirecting...", "success");
             
-            // Sử dụng biến state để lưu timer và clear khi cần
             const timer = setTimeout(() => {
                 navigate("/login", {
                     replace: true, 
@@ -144,25 +148,21 @@ const RegisterPage = () => {
             setRedirectTimer(timer);
 
         } catch (error) {
-            let errorMsg = error.message;
+            let errorMessage = "Failed to verify OTP. Please try again";
             
-            if (error.response) {
-                errorMsg = error.response.data.message || errorMsg;
-                
-                if (errorMsg.includes("Email already exists")) {
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+                if (errorMessage.toLowerCase().includes("email already exists")) {
                     setStep(1);
                 }
-            } else if (error.request) {
-                errorMsg = "No response from server";
             }
             
-            displayToast("Error", errorMsg);
+            displayModal("Error", errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Resend OTP
     const handleResendOTP = async () => {
         setIsLoading(true);
 
@@ -173,16 +173,21 @@ const RegisterPage = () => {
                 formData.password
             );
             
-            displayToast("Success", "New OTP code sent (valid for 5 minutes)", "success");
-            startCountdown(300); // Reset countdown to 300s (5 minutes)
+            displayModal("Success", "New OTP code sent (valid for 5 minutes)", "success");
+            startCountdown(300);
         } catch (error) {
-            displayToast("Error", error.message || "Failed to resend OTP");
+            let errorMessage = "Failed to resend OTP";
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+            
+            displayModal("Error", errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Countdown timer (format minutes:seconds)
     const startCountdown = (seconds) => {
         setCountdown(seconds);
         const timer = setInterval(() => {
@@ -196,7 +201,6 @@ const RegisterPage = () => {
         }, 1000);
     };
 
-    // Format countdown time
     const formatCountdown = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -204,58 +208,57 @@ const RegisterPage = () => {
     };
 
     return (
-        <div 
-            className="min-vh-100 d-flex align-items-center justify-content-center"
+        <div className="min-vh-100 d-flex align-items-center justify-content-center"
             style={{
                 backgroundImage: "url('https://danviet.ex-cdn.com/files/f1/296231569849192448/2023/1/15/z403556587967736b20440c47ed11d16316bc354242f70-1673776858625-16737768587602017391246.jpg')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 position: "relative"
-            }}
-        >
-            <div
-                className="position-absolute top-0 start-0 w-100 h-100"
+            }}>
+            <div className="position-absolute top-0 start-0 w-100 h-100"
                 style={{
                     backgroundColor: "rgba(0, 0, 0, 0.4)",
                     backdropFilter: "blur(5px)"
-                }}
-            ></div>
+                }}></div>
 
-            {/* Toast Notification */}
-            <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 11 }}>
-                <div 
-                    className={`toast ${showToast ? "show" : ""}`} 
-                    role="alert" 
-                    aria-live="assertive" 
-                    aria-atomic="true"
-                    data-bs-autohide="true"
-                >
-                    <div className={`toast-header bg-${toastConfig.bg} text-white`}>
-                        <strong className="me-auto">{toastConfig.title}</strong>
-                        <button 
-                            type="button" 
-                            className="btn-close btn-close-white" 
-                            data-bs-dismiss="toast" 
-                            aria-label="Close"
-                            onClick={() => setShowToast(false)}
-                        ></button>
-                    </div>
-                    <div className="toast-body">
-                        {toastConfig.message}
+            {/* Modal Alert */}
+            <div className={`modal ${showModal ? 'show d-block' : ''}`} 
+                 tabIndex="-1" 
+                 role="dialog" 
+                 data-testid="alert-modal"
+                 style={{ zIndex: 9999 }}>
+                <div className="modal-dialog" role="document">
+                    <div className={`modal-content border-0 ${modalConfig.variant === 'success' ? 'bg-success text-white' : 'bg-danger text-white'}`}>
+                        <div className="modal-header border-0">
+                            <h5 className="modal-title">{modalConfig.title}</h5>
+                            <button type="button" 
+                                    className="btn-close btn-close-white" 
+                                    onClick={closeModal}></button>
+                        </div>
+                        <div className="modal-body">
+                            {modalConfig.message}
+                        </div>
+                        <div className="modal-footer border-0">
+                            <button type="button" 
+                                    className="btn btn-light" 
+                                    onClick={closeModal}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+            {showModal && <div className="modal-backdrop show"></div>}
 
-            <div
-                className="card p-4 border-0 shadow-lg position-relative"
+            <div className="card p-4 border-0 shadow-lg position-relative"
                 style={{
                     width: "100%",
                     maxWidth: "450px",
                     borderRadius: "15px",
                     backgroundColor: "rgba(255, 255, 255, 0.9)",
-                    overflow: "hidden"
-                }}
-            >
+                    overflow: "hidden",
+                    zIndex: 1
+                }}>
                 <div className="text-center mb-4">
                     <h2 className="text-dark mb-1" style={{ fontFamily: "'Playfair Display', serif", fontWeight: "700" }}>
                         {step === 1 ? "CREATE ACCOUNT" : "OTP VERIFICATION"}
@@ -266,7 +269,6 @@ const RegisterPage = () => {
                 </div>
 
                 {step === 1 ? (
-                    // Registration form (step 1)
                     <form onSubmit={handleSendOTP}>
                         <div className="mb-3">
                             <label htmlFor="username" className="form-label small text-uppercase text-muted">
@@ -342,7 +344,6 @@ const RegisterPage = () => {
                         </button>
                     </form>
                 ) : (
-                    // OTP verification form (step 2)
                     <form onSubmit={handleVerifyOTP}>
                         <div className="mb-4">
                             <label htmlFor="otp" className="form-label small text-uppercase text-muted">

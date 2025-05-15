@@ -126,7 +126,7 @@ class ConsignmentTest:
                 "username": "khanh",
                 "email": "khanhhhadz@gmail.com",
                 "password": "123",
-                "email_address": "khanhhhadz@gmail.com",
+                "email_address": "khanhhhadz@gmail.com",  
                 "email_password": "ahxtbsnpgkkhcfjp", 
                 "expected_result": True,
                 "description": "Kiểm tra đăng ký thành công với email hợp lệ và xác thực OTP thực"
