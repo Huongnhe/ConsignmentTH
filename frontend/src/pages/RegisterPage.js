@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -17,9 +17,34 @@ const RegisterPage = () => {
     // OTP verification state
     const [otp, setOtp] = useState("");
     const [step, setStep] = useState(1); // 1: Registration, 2: OTP Verification
-    const [message, setMessage] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [countdown, setCountdown] = useState(0);
+    const [redirectTimer, setRedirectTimer] = useState(null);
+    const [showToast, setShowToast] = useState(false);
+    const [toastConfig, setToastConfig] = useState({
+        title: "",
+        message: "",
+        bg: "danger"
+    });
+
+    // Clear timeout khi component unmount
+    useEffect(() => {
+        return () => {
+            if (redirectTimer) {
+                clearTimeout(redirectTimer);
+            }
+        };
+    }, [redirectTimer]);
+
+    const displayToast = (title, message, bg = "danger") => {
+        setToastConfig({
+            title,
+            message,
+            bg
+        });
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -46,23 +71,22 @@ const RegisterPage = () => {
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessage("");
 
         // Validate inputs
         if (!formData.username || !formData.email || !formData.password) {
-            setMessage("Please fill in all fields");
+            displayToast("Error", "Please fill in all fields");
             setIsLoading(false);
             return;
         }
 
         if (!validateUsername(formData.username)) {
-            setMessage("Username cannot contain spaces or special characters");
+            displayToast("Error", "Username cannot contain spaces or special characters");
             setIsLoading(false);
             return;
         }
 
         if (!validateEmail(formData.email)) {
-            setMessage("Invalid email format (e.g., example@gmail.com)");
+            displayToast("Error", "Invalid email format (e.g., example@gmail.com)");
             setIsLoading(false);
             return;
         }
@@ -74,11 +98,11 @@ const RegisterPage = () => {
                 formData.password
             );
             
-            setMessage(result.message || "OTP code has been sent to your email (valid for 5 minutes)");
-            setStep(2); // Move to OTP verification step
+            displayToast("Success", result.message || "OTP code has been sent to your email (valid for 5 minutes)", "success");
+            setStep(2);
             startCountdown(300); // Start 300s countdown (5 minutes)
         } catch (error) {
-            setMessage(error.message || "Failed to send OTP. Please try again");
+            displayToast("Error", error.message || "Failed to send OTP. Please try again");
         } finally {
             setIsLoading(false);
         }
@@ -88,11 +112,10 @@ const RegisterPage = () => {
     const handleVerifyOTP = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessage("");
 
         // Validate OTP
         if (!otp || otp.length !== 6) {
-            setMessage("Please enter a 6-digit OTP code");
+            displayToast("Error", "Please enter a 6-digit OTP code");
             setIsLoading(false);
             return;
         }
@@ -105,17 +128,20 @@ const RegisterPage = () => {
                 otp
             );
             
-            setMessage("Registration successful! Redirecting...");
+            displayToast("Success", "Registration successful! Redirecting...", "success");
             
-            // Add delay before redirect
-            setTimeout(() => {
+            // Sử dụng biến state để lưu timer và clear khi cần
+            const timer = setTimeout(() => {
                 navigate("/login", {
+                    replace: true, 
                     state: {
                         registeredEmail: formData.email,
                         message: "Registration successful. Please login."
                     }
                 });
             }, 2000);
+            
+            setRedirectTimer(timer);
 
         } catch (error) {
             let errorMsg = error.message;
@@ -130,7 +156,7 @@ const RegisterPage = () => {
                 errorMsg = "No response from server";
             }
             
-            setMessage(errorMsg);
+            displayToast("Error", errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -139,7 +165,6 @@ const RegisterPage = () => {
     // Resend OTP
     const handleResendOTP = async () => {
         setIsLoading(true);
-        setMessage("");
 
         try {
             const result = await registerWithOTPStep1(
@@ -148,10 +173,10 @@ const RegisterPage = () => {
                 formData.password
             );
             
-            setMessage("New OTP code sent (valid for 5 minutes)");
+            displayToast("Success", "New OTP code sent (valid for 5 minutes)", "success");
             startCountdown(300); // Reset countdown to 300s (5 minutes)
         } catch (error) {
-            setMessage(error.message || "Failed to resend OTP");
+            displayToast("Error", error.message || "Failed to resend OTP");
         } finally {
             setIsLoading(false);
         }
@@ -196,6 +221,31 @@ const RegisterPage = () => {
                 }}
             ></div>
 
+            {/* Toast Notification */}
+            <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 11 }}>
+                <div 
+                    className={`toast ${showToast ? "show" : ""}`} 
+                    role="alert" 
+                    aria-live="assertive" 
+                    aria-atomic="true"
+                    data-bs-autohide="true"
+                >
+                    <div className={`toast-header bg-${toastConfig.bg} text-white`}>
+                        <strong className="me-auto">{toastConfig.title}</strong>
+                        <button 
+                            type="button" 
+                            className="btn-close btn-close-white" 
+                            data-bs-dismiss="toast" 
+                            aria-label="Close"
+                            onClick={() => setShowToast(false)}
+                        ></button>
+                    </div>
+                    <div className="toast-body">
+                        {toastConfig.message}
+                    </div>
+                </div>
+            </div>
+
             <div
                 className="card p-4 border-0 shadow-lg position-relative"
                 style={{
@@ -214,12 +264,6 @@ const RegisterPage = () => {
                         {step === 1 ? "Create an account to get started" : `OTP code sent to ${formData.email} (valid for 5 minutes)`}
                     </p>
                 </div>
-
-                {message && (
-                    <div className={`alert ${message.includes("success") ? "alert-success" : "alert-danger"} text-center mb-3 py-2`}>
-                        {message}
-                    </div>
-                )}
 
                 {step === 1 ? (
                     // Registration form (step 1)

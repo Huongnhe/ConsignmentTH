@@ -68,14 +68,14 @@
             throw new Error("Không thể gửi mã OTP. Vui lòng thử lại.");
         }
 
-        return { email, message: "Mã OTP đã được gửi" };
+        return { email, message: "The OTP code has been sent." };
     }
 
     async function verifyAndCreateUser(username, email, password, otp) {
         // 1. Kiểm tra OTP
         const otpRecord = await getLatestOTPRecord(email);
         if (!otpRecord || otpRecord.OTP !== otp || new Date(otpRecord.Expires_At) < new Date()) {
-            throw new Error("Mã OTP không hợp lệ hoặc đã hết hạn");
+            throw new Error("The OTP code is invalid or has expired.");
         }
 
         // 2. Kiểm tra email đã tồn tại chưa (thêm bước này)

@@ -1,6 +1,7 @@
 from login_handler import LoginHandler
 from consignment_handler import ConsignmentHandler
 from order_handler import OrderHandler
+from registration_handler import RegistrationHandler
 import mysql.connector
 import os
 from selenium import webdriver
@@ -36,10 +37,12 @@ class ConsignmentTest:
             self.login_handler = LoginHandler(self.driver)
             self.consignment_handler = ConsignmentHandler(self.driver)
             self.order_handler = OrderHandler(self.driver)
+            self.registration_handler = RegistrationHandler(self.driver)
         else:
             self.login_handler = None
             self.consignment_handler = None
             self.order_handler = None
+            self.registration_handler = None
         
         # Danh sách accounts
         self.accounts = [
@@ -116,7 +119,39 @@ class ConsignmentTest:
             {"order_id": 6, "description": "Đơn hàng hợp lệ"},
             {"order_id": 9999, "description": "Đơn hàng không tồn tại"}
         ]
+        
+        self.registration_test_cases = [
+            {
+                "case_name": "Đăng ký thành công với email hợp lệ",
+                "username": "khanh",
+                "email": "khanhhhadz@gmail.com",
+                "password": "123",
+                "email_address": "khanhhhadz@gmail.com",
+                "email_password": "ahxtbsnpgkkhcfjp", 
+                "expected_result": True,
+                "description": "Kiểm tra đăng ký thành công với email hợp lệ và xác thực OTP thực"
+            },
+            {
+                "case_name": "Đăng ký với email không hợp lệ",
+                "username": "testuser_invalid",
+                "email": "invalid_email",
+                "password": "Valid@123",
+                "expected_result": False,
+                "expected_error": "Invalid email format",
+                "description": "Kiểm tra hệ thống báo lỗi khi email không hợp lệ"
+            },
+            {
+                "case_name": "Đăng ký với email đã tồn tại",
+                "username": "testuser_exist",
+                "email": "admin@gmail.com",
+                "password": "Exist@123",
+                "expected_result": False,
+                "expected_error": "already exists",
+                "description": "Kiểm tra hệ thống báo lỗi khi email đã tồn tại"
+            }
+        ]
 
+        
         # Tạo thư mục test_images nếu chưa tồn tại
         os.makedirs("test_images", exist_ok=True)
 
@@ -124,6 +159,25 @@ class ConsignmentTest:
         if not self.driver:
             print("[SYSTEM ERROR] Không thể chạy test do lỗi WebDriver")
             return
+        
+        #  Chạy các test case đăng ký
+        print("\n=== Chạy các kiểm thử đăng ký ===")
+        for case in self.registration_test_cases:
+            print(f"\n=== Bắt đầu test case: {case['case_name']} ===")
+            try:
+                # Chạy test case đăng ký
+                result = self.registration_handler.run_registration_test_case(case)
+                print(f"-> [KẾT QUẢ] {'Thành công' if result else 'Thất bại'}")
+                
+                # Nếu test case thất bại nhưng không phải là lỗi hệ thống, vẫn chạy tiếp
+                if not result and "SYSTEM ERROR" not in str(self.registration_handler.check_error_message()):
+                    print("-> [INFO] Test case thất bại nhưng không phải lỗi hệ thống, tiếp tục chạy test case tiếp theo")
+                    continue
+                    
+            except Exception as e:
+                print(f"-> [LỖI HỆ THỐNG] Lỗi khi chạy test case: {str(e)}")
+                # Tiếp tục chạy test case tiếp theo ngay cả khi có lỗi
+                continue
 
         for account in self.accounts:
             print(f"\n=== Bắt đầu test với account: {account['email']} ({account['description']}) ===")
