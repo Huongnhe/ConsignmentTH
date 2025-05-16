@@ -19,7 +19,6 @@ const RegisterPage = () => {
     const [countdown, setCountdown] = useState(0);
     const [redirectTimer, setRedirectTimer] = useState(null);
     
-    // State cho modal thông báo
     const [showModal, setShowModal] = useState(false);
     const [modalConfig, setModalConfig] = useState({
         title: "",
@@ -228,20 +227,23 @@ const RegisterPage = () => {
                  data-testid="alert-modal"
                  style={{ zIndex: 9999 }}>
                 <div className="modal-dialog" role="document">
-                    <div className={`modal-content border-0 ${modalConfig.variant === 'success' ? 'bg-success text-white' : 'bg-danger text-white'}`}>
+                    <div className={`modal-content border-0 ${modalConfig.variant === 'success' ? 'bg-success text-white' : 'bg-danger text-white'}`}
+                         data-testid="modal-content">
                         <div className="modal-header border-0">
-                            <h5 className="modal-title">{modalConfig.title}</h5>
+                            <h5 className="modal-title" data-testid="modal-title">{modalConfig.title}</h5>
                             <button type="button" 
                                     className="btn-close btn-close-white" 
-                                    onClick={closeModal}></button>
+                                    onClick={closeModal}
+                                    data-testid="close-modal-button"></button>
                         </div>
-                        <div className="modal-body">
+                        <div className="modal-body" data-testid="modal-message">
                             {modalConfig.message}
                         </div>
                         <div className="modal-footer border-0">
                             <button type="button" 
                                     className="btn btn-light" 
-                                    onClick={closeModal}>
+                                    onClick={closeModal}
+                                    data-testid="modal-close-button">
                                 Close
                             </button>
                         </div>
@@ -269,7 +271,7 @@ const RegisterPage = () => {
                 </div>
 
                 {step === 1 ? (
-                    <form onSubmit={handleSendOTP}>
+                    <form onSubmit={handleSendOTP} data-testid="register-form">
                         <div className="mb-3">
                             <label htmlFor="username" className="form-label small text-uppercase text-muted">
                                 Username
@@ -283,6 +285,7 @@ const RegisterPage = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 required
+                                data-testid="username-input"
                                 style={{
                                     backgroundColor: "rgba(255, 240, 220, 0.3)",
                                     borderBottom: "1px solid #ddd !important"
@@ -299,10 +302,10 @@ const RegisterPage = () => {
                                 name="email"
                                 id="email"
                                 className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-                                placeholder="example@gmail.com"
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
+                                data-testid="email-input"
                                 style={{
                                     backgroundColor: "rgba(255, 240, 220, 0.3)",
                                     borderBottom: "1px solid #ddd !important"
@@ -319,10 +322,10 @@ const RegisterPage = () => {
                                 name="password"
                                 id="password"
                                 className="form-control border-0 border-bottom rounded-0 py-3 px-0"
-                                placeholder="••••••••"
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
+                                data-testid="password-input"
                                 style={{
                                     backgroundColor: "rgba(255, 240, 220, 0.3)",
                                     borderBottom: "1px solid #ddd !important"
@@ -334,6 +337,7 @@ const RegisterPage = () => {
                             type="submit"
                             className="btn btn-dark w-100 py-3 mb-3"
                             disabled={isLoading}
+                            data-testid="register-button"
                             style={{
                                 letterSpacing: "1px",
                                 fontWeight: "500",
@@ -344,7 +348,7 @@ const RegisterPage = () => {
                         </button>
                     </form>
                 ) : (
-                    <form onSubmit={handleVerifyOTP}>
+                    <form onSubmit={handleVerifyOTP} data-testid="otp-form">
                         <div className="mb-4">
                             <label htmlFor="otp" className="form-label small text-uppercase text-muted">
                                 OTP Code (6 digits)
@@ -358,6 +362,7 @@ const RegisterPage = () => {
                                 onChange={handleOTPChange}
                                 maxLength="6"
                                 required
+                                data-testid="otp-input"
                                 style={{
                                     backgroundColor: "rgba(255, 240, 220, 0.3)",
                                     borderBottom: "1px solid #ddd !important",
@@ -371,6 +376,7 @@ const RegisterPage = () => {
                             type="submit"
                             className="btn btn-dark w-100 py-3 mb-3"
                             disabled={isLoading}
+                            data-testid="verify-button"
                             style={{
                                 letterSpacing: "1px",
                                 fontWeight: "500",
@@ -387,6 +393,7 @@ const RegisterPage = () => {
                                     className="btn btn-link p-0 text-decoration-none"
                                     onClick={handleResendOTP}
                                     disabled={countdown > 0 || isLoading}
+                                    data-testid="resend-button"
                                 >
                                     Resend Code {countdown > 0 ? `(${formatCountdown(countdown)})` : ""}
                                 </button>
@@ -408,6 +415,7 @@ const RegisterPage = () => {
                 <button
                     className="btn btn-outline-dark w-100 py-2"
                     onClick={() => navigate("/login")}
+                    data-testid="login-button"
                     style={{
                         letterSpacing: "1px",
                         transition: "all 0.3s ease"

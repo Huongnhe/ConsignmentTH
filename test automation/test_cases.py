@@ -46,7 +46,6 @@ class ConsignmentTest:
         
         # Danh sách accounts
         self.accounts = [
-            
             {
                 "email": "wrong@gmail.com",
                 "password": "wrongpass",
@@ -70,7 +69,7 @@ class ConsignmentTest:
             {
                 "email": "admin@gmail.com", 
                 "password": "123",
-                "description": "admin"
+                "description": "manager"
             }
         ]
         
@@ -151,6 +150,14 @@ class ConsignmentTest:
             }
         ]
 
+        # Thống kê kết quả test
+        self.test_results = {
+            'registration': {'success': 0, 'fail': 0},
+            'login': {'success': 0, 'fail': 0},
+            'consignment': {'success': 0, 'fail': 0},
+            'order': {'success': 0, 'fail': 0},
+            'search': {'success': 0, 'fail': 0}
+        }
         
         # Tạo thư mục test_images nếu chưa tồn tại
         os.makedirs("test_images", exist_ok=True)
@@ -160,24 +167,20 @@ class ConsignmentTest:
             print("[SYSTEM ERROR] Không thể chạy test do lỗi WebDriver")
             return
         
-        #  Chạy các test case đăng ký
+        # Chạy các test case đăng ký
         print("\n=== Chạy các kiểm thử đăng ký ===")
         for case in self.registration_test_cases:
             print(f"\n=== Bắt đầu test case: {case['case_name']} ===")
             try:
-                # Chạy test case đăng ký
                 result = self.registration_handler.run_registration_test_case(case)
+                if result:
+                    self.test_results['registration']['success'] += 1
+                else:
+                    self.test_results['registration']['fail'] += 1
                 print(f"-> [KẾT QUẢ] {'Thành công' if result else 'Thất bại'}")
-                
-                # Nếu test case thất bại nhưng không phải là lỗi hệ thống, vẫn chạy tiếp
-                if not result and "SYSTEM ERROR" not in str(self.registration_handler.check_error_message()):
-                    print("-> [INFO] Test case thất bại nhưng không phải lỗi hệ thống, tiếp tục chạy test case tiếp theo")
-                    continue
-                    
             except Exception as e:
                 print(f"-> [LỖI HỆ THỐNG] Lỗi khi chạy test case: {str(e)}")
-                # Tiếp tục chạy test case tiếp theo ngay cả khi có lỗi
-                continue
+                self.test_results['registration']['fail'] += 1
 
         for account in self.accounts:
             print(f"\n=== Bắt đầu test với account: {account['email']} ({account['description']}) ===")
@@ -187,8 +190,13 @@ class ConsignmentTest:
             try:
                 sleep(2)
                 login_success = self.login_handler.login(account)
+                if login_success:
+                    self.test_results['login']['success'] += 1
+                else:
+                    self.test_results['login']['fail'] += 1
             except Exception as e:
                 print(f"[SYSTEM ERROR] Lỗi khi đăng nhập: {str(e)}")
+                self.test_results['login']['fail'] += 1
             
             if not login_success:
                 print(f"-> [VALIDATE] Đăng nhập thất bại, chuyển sang account tiếp theo")
@@ -216,9 +224,14 @@ class ConsignmentTest:
                         try:
                             print(f"\n=== Thực hiện test case: {consignment_case['case_name']} ===")
                             create_success = self.consignment_handler.test_create_consignment(consignment_case)
+                            if create_success:
+                                self.test_results['consignment']['success'] += 1
+                            else:
+                                self.test_results['consignment']['fail'] += 1
                             print(f"-> [RESULT] {'Thành công' if create_success else 'Thất bại'}")
                         except Exception as e:
                             print(f"-> [SYSTEM ERROR] Lỗi khi chạy test case: {str(e)}")
+                            self.test_results['consignment']['fail'] += 1
                 
                 elif role.lower() == "manager":
                     # Chạy các case thêm đơn hàng
@@ -226,18 +239,28 @@ class ConsignmentTest:
                         try:
                             print(f"\n=== Thực hiện test case: {order_case['case_name']} ===")
                             add_success = self.order_handler.test_add_order(order_case)
+                            if add_success:
+                                self.test_results['order']['success'] += 1
+                            else:
+                                self.test_results['order']['fail'] += 1
                             print(f"-> [RESULT] {'Thành công' if add_success else 'Thất bại'}")
                         except Exception as e:
                             print(f"-> [SYSTEM ERROR] Lỗi khi chạy test case: {str(e)}")
+                            self.test_results['order']['fail'] += 1
                     
                     # Chạy các case tìm kiếm đơn hàng
                     for search_case in self.search_cases:
                         try:
                             print(f"\n=== Thực hiện tìm kiếm đơn hàng #{search_case['order_id']} ({search_case['description']}) ===")
                             search_success = self.order_handler.test_search_order(search_case["order_id"])
+                            if search_success:
+                                self.test_results['search']['success'] += 1
+                            else:
+                                self.test_results['search']['fail'] += 1
                             print(f"-> [RESULT] {'Thành công' if search_success else 'Thất bại'}")
                         except Exception as e:
                             print(f"-> [SYSTEM ERROR] Lỗi khi tìm kiếm đơn hàng: {str(e)}")
+                            self.test_results['search']['fail'] += 1
                 else:
                     print(f"-> [VALIDATE] Role '{role}' không được hỗ trợ")
             
@@ -248,6 +271,31 @@ class ConsignmentTest:
                     sleep(2)
                 except Exception as e:
                     print(f"-> [SYSTEM ERROR] Lỗi khi logout: {str(e)}")
+
+        # Hiển thị tổng kết kết quả test
+        self.show_test_summary()
+
+    def show_test_summary(self):
+        print("\n=== TỔNG KẾT KẾT QUẢ KIỂM THỬ ===")
+        print(f"1. Đăng ký: Thành công {self.test_results['registration']['success']}, Thất bại {self.test_results['registration']['fail']}")
+        print(f"2. Đăng nhập: Thành công {self.test_results['login']['success']}, Thất bại {self.test_results['login']['fail']}")
+        print(f"3. Tạo lô hàng: Thành công {self.test_results['consignment']['success']}, Thất bại {self.test_results['consignment']['fail']}")
+        print(f"4. Thêm đơn hàng: Thành công {self.test_results['order']['success']}, Thất bại {self.test_results['order']['fail']}")
+        print(f"5. Tìm kiếm đơn hàng: Thành công {self.test_results['search']['success']}, Thất bại {self.test_results['search']['fail']}")
+        
+        total_success = (self.test_results['registration']['success'] + 
+                        self.test_results['login']['success'] + 
+                        self.test_results['consignment']['success'] + 
+                        self.test_results['order']['success'] + 
+                        self.test_results['search']['success'])
+        
+        total_fail = (self.test_results['registration']['fail'] + 
+                      self.test_results['login']['fail'] + 
+                      self.test_results['consignment']['fail'] + 
+                      self.test_results['order']['fail'] + 
+                      self.test_results['search']['fail'])
+        
+        print(f"\nTỔNG CỘNG: {total_success} test case thành công, {total_fail} test case thất bại")
 
     def cleanup(self):
         if self.driver:
