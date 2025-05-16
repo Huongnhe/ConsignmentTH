@@ -33,7 +33,7 @@ class OrderHandler:
                 product_item = self.wait.until(EC.presence_of_element_located(
                     (By.XPATH, f"//li[contains(., '{order_case['product_name']}')]")))
                 print(f"-> [INFO] Tìm thấy sản phẩm: {order_case['product_name']}")
-                
+                sleep(2)
                 # Check product status (only "Received" can be added)
                 try:
                     status_badge = product_item.find_element(By.XPATH, ".//span[contains(@class, 'badge')]")
@@ -58,19 +58,20 @@ class OrderHandler:
                     return False
                 
                 # Fill customer info
+                sleep(2)
                 customer_name = self.wait.until(EC.presence_of_element_located(
                     (By.XPATH, "//input[@name='name']")))
                 customer_name.clear()
                 customer_name.send_keys(order_case["customer_name"])
-                
+                sleep(2)
                 customer_phone = self.driver.find_element(By.XPATH, "//input[@name='phone']")
                 customer_phone.clear()
                 customer_phone.send_keys(order_case["customer_phone"])
-                
+                sleep(2)
                 customer_age = self.driver.find_element(By.XPATH, "//input[@name='age']")
                 customer_age.clear()
                 customer_age.send_keys(order_case["customer_age"])
-                
+                sleep(2)
                 # Submit order
                 submit_button = self.wait.until(EC.element_to_be_clickable(
                     (By.XPATH, "//button[contains(., 'Tạo đơn hàng')]")))
@@ -93,7 +94,7 @@ class OrderHandler:
                     except NoSuchElementException:
                         print("-> [VALIDATE] Thông tin đơn hàng không hiển thị đúng trong modal")
                         return False
-                    
+                    sleep(2)
                     # Click confirm button in modal
                     confirm_button = self.wait.until(EC.element_to_be_clickable(
                         (By.XPATH, "//div[@class='modal fade show d-block']//button[contains(., 'Xác nhận')]")))

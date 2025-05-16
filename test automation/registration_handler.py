@@ -126,20 +126,75 @@ class RegistrationHandler:
             )
             verify_button.click()
             
-            # Chờ modal thành công xuất hiện
+            # Chờ xử lý OTP
+            sleep(2)
+            
+            # Kiểm tra kết quả
             try:
-                self.wait.until(
-                    EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-testid='alert-modal']"))
-                )
-                print("Found success modal after OTP verification")
-                return True
-            except TimeoutException:
-                print("Success modal not found, but continuing...")
-                return True
+                # Kiểm tra xem có modal thông báo lỗi không
+                error_modal = self.driver.find_elements(By.CSS_SELECTOR, "[data-testid='alert-modal']")
+                if error_modal and "error" in error_modal[0].text.lower():
+                    print("Found error modal after OTP verification")
+                    return False
+                
+                # Kiểm tra xem đã chuyển trang hay chưa
+                if "/login" in self.driver.current_url:
+                    print("Redirected to login page after OTP verification")
+                    return True
+                
+                # Kiểm tra modal thành công
+                success_modal = self.driver.find_elements(By.CSS_SELECTOR, "[data-testid='alert-modal']")
+                if success_modal and "success" in success_modal[0].text.lower():
+                    print("Found success modal after OTP verification")
+                    return True
+                
+                # Nếu không có gì thì coi như thất bại
+                print("No confirmation found after OTP verification")
+                return False
+                
+            except Exception as e:
+                print(f"Error checking OTP verification result: {str(e)}")
+                return False
                 
         except Exception as e:
             print(f"Error in OTP verification step: {str(e)}")
             self.driver.save_screenshot("error_otp_verification.png")
+            return False
+
+    def verify_invalid_otp(self, otp):
+        try:
+            # Nhập OTP
+            otp_field = self.wait.until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-testid='otp-input']"))
+            )
+            otp_field.clear()
+            otp_field.send_keys(otp)
+            sleep(0.5)
+
+            # Click verify
+            verify_button = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='verify-button']"))
+            )
+            verify_button.click()
+            
+            # Kiểm tra modal lỗi xuất hiện
+            try:
+                error_modal = self.wait.until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-testid='alert-modal']"))
+                )
+                if "error" in error_modal.text.lower():
+                    print("Found error modal for invalid OTP as expected")
+                    return True
+                else:
+                    print("Found modal but not error modal")
+                    return False
+            except TimeoutException:
+                print("Error modal not found for invalid OTP")
+                return False
+                
+        except Exception as e:
+            print(f"Error in invalid OTP verification step: {str(e)}")
+            self.driver.save_screenshot("error_invalid_otp_verification.png")
             return False
 
     def close_modal(self):
@@ -189,12 +244,18 @@ class RegistrationHandler:
 
                     # Xử lý OTP cho email hợp lệ
                     if "@gmail.com" in test_case["email"] and "invalid" not in test_case["email"]:
-                        otp = self.get_otp_from_email(
-                            test_case["email_address"],
-                            test_case["email_password"]
-                        )
+                        # Kiểm tra nếu có OTP được cung cấp trong test case
+                        if "otp" in test_case:
+                            otp = test_case["otp"]
+                            print(f"Using OTP from test case: {otp}")
+                        else:
+                            otp = self.get_otp_from_email(
+                                test_case["email_address"],
+                                test_case["email_password"]
+                            )
+                        
                         if not otp:
-                            print("Failed to retrieve OTP from email")
+                            print("Failed to get OTP")
                             return False
 
                         if not self.verify_otp_step(otp):
@@ -223,10 +284,21 @@ class RegistrationHandler:
             else:
                 # Xử lý trường hợp mong đợi lỗi
                 try:
-                    self.wait.until(
-                        EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-testid='alert-modal']")))
-                    print("Found error modal as expected")
-                    result = True
+                    if "OTP" in test_case["case_name"]:
+                        # Xử lý riêng cho case OTP sai
+                        self.wait.until(
+                            EC.presence_of_element_located((By.XPATH, "//h2[contains(., 'OTP VERIFICATION')]")))
+                        print("Reached OTP verification step")
+                        
+                        # Sử dụng OTP từ test case hoặc mặc định
+                        otp = test_case.get("otp", "123456")
+                        result = self.verify_invalid_otp(otp)
+                    else:
+                        # Xử lý các case lỗi khác
+                        self.wait.until(
+                            EC.visibility_of_element_located((By.CSS_SELECTOR, "[data-testid='alert-modal']")))
+                        print("Found error modal as expected")
+                        result = True
                 except TimeoutException:
                     print("Error modal not found when expected")
                     result = False
