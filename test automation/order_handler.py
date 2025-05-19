@@ -2,6 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
+import time
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import os
 from selenium.webdriver.common.keys import Keys
@@ -182,7 +183,7 @@ class OrderHandler:
             return False
     
     def _handle_print_invoice(self, order_case):
-        """Handle print invoice confirmation"""
+        """Handle print invoice confirmation and verify download"""
         try:
             sleep(2)
             print_modal = self.wait.until(EC.visibility_of_element_located(
@@ -202,29 +203,89 @@ class OrderHandler:
             # Handle print confirmation based on test case setting
             if order_case.get("should_print", True):
                 sleep(2)
+                
+                # Get list of existing files before downloading
+                existing_files = set(os.listdir(self.download_dir))
+                
                 # Click print button
                 print_button = self.wait.until(EC.element_to_be_clickable(
                     (By.XPATH, "//div[contains(@class, 'modal fade show d-block')]//button[contains(., 'Print Invoice')]")))
                 print_button.click()
                 print("-> [INFO] Clicked print invoice")
                 
-                # Wait for print window to open
+                # Switch to new window (print window)
                 sleep(3)
-                
-                # Handle print dialog (Chrome)
-                if 'chrome' in self.driver.capabilities.get('browserName', '').lower():
+                if len(self.driver.window_handles) > 1:
+                    self.driver.switch_to.window(self.driver.window_handles[1])
+                    
+                    # Wait for print window to load
                     try:
-                        # Send keys to handle print dialog (Save as PDF)
-                        actions = ActionChains(self.driver)
-                        actions.send_keys(Keys.ENTER).perform()  # Confirm print
-                        sleep(2)
+                        self.wait.until(EC.presence_of_element_located(
+                            (By.XPATH, "//h2[contains(., 'SALES INVOICE')]")))
+                        print("-> [INFO] Print window opened successfully")
                         
-                        # Check if file was downloaded
-                        print(f"-> [INFO] Invoice will be saved to: {self.download_dir}")
-                    except Exception as e:
-                        print(f"-> [WARNING] Couldn't handle print dialog: {str(e)}")
-                
-                return True
+                        # Handle print dialog (Chrome)
+                        if 'chrome' in self.driver.capabilities.get('browserName', '').lower():
+                            try:
+                                # Send keys to handle print dialog (Save as PDF)
+                                actions = ActionChains(self.driver)
+                                actions.send_keys(Keys.ENTER).perform()  # Confirm print
+                                sleep(2)
+                                
+                                # Wait for file to download (check for new files)
+                                max_wait_time = 10
+                                start_time = time.time()
+                                downloaded = False
+                                new_file = None
+                                
+                                while time.time() - start_time < max_wait_time:
+                                    current_files = set(os.listdir(self.download_dir))
+                                    new_files = current_files - existing_files
+                                    
+                                    if new_files:
+                                        # Find the newest PDF file
+                                        new_file = max(
+                                            [os.path.join(self.download_dir, f) for f in new_files],
+                                            key=os.path.getctime
+                                        )
+                                        if new_file.lower().endswith('.pdf'):
+                                            print(f"-> [SUCCESS] Invoice downloaded to: {new_file}")
+                                            downloaded = True
+                                            break
+                                    
+                                    sleep(1)
+                                
+                                if not downloaded:
+                                    print("-> [VALIDATE] Invoice file was not downloaded")
+                                    return False
+                                
+                            except Exception as e:
+                                print(f"-> [WARNING] Couldn't handle print dialog: {str(e)}")
+                                return False
+                        
+                        # Close print window
+                        sleep(2)
+                        self.driver.close()
+                        self.driver.switch_to.window(self.driver.window_handles[0])
+                        
+                        # Verify the downloaded file exists
+                        if new_file and os.path.exists(new_file):
+                            print(f"-> [VALIDATE] Invoice successfully saved to: {new_file}")
+                            # Optionally, you can add verification of file content here
+                            return True
+                        else:
+                            print("-> [VALIDATE] Downloaded invoice file not found")
+                            return False
+                        
+                    except TimeoutException:
+                        print("-> [VALIDATE] Print window content not loaded correctly")
+                        if len(self.driver.window_handles) > 1:
+                            self.driver.close()
+                            self.driver.switch_to.window(self.driver.window_handles[0])
+                        return False
+                else:
+                    print("-> [VALIDATE] Print window did not open")
+                    return False
             else:
                 sleep(2)
                 # Click skip button

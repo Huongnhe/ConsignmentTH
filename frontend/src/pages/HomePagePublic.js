@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import Navbar from "../pages/MenuUser";
+import NavbarUser from "./MenuUser";
 
 const PublicPage = () => {
   const { user } = useContext(AuthContext);
@@ -49,7 +49,7 @@ const PublicPage = () => {
 
   return (
     <div className="luxury-theme" style={{ backgroundColor: "#FFF9F0", minHeight: "100vh" }}>
-      <Navbar />
+      <NavbarUser />
 
       {/* Hero Section (only shows on first visit) */}
       {showHero ? (

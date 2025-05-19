@@ -4,7 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const NavbarUser = () => {
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -83,71 +83,66 @@ const NavbarUser = () => {
                 }}
               >
                 Home
-                <span style={{
-                  position: "absolute",
-                  bottom: "0",
-                  left: "0",
-                  width: "0%",
-                  height: "2px",
-                  backgroundColor: "#d4af37",
-                  transition: "width 0.3s ease"
-                }}></span>
               </Link>
             </li>
             
-            <li className="nav-item mx-2">
-              <Link 
-                className="nav-link px-3" 
-                to="/consigns"
-                style={{
-                  color: "#ffffff",
-                  fontWeight: "600",
-                  letterSpacing: "1px",
-                  fontSize: "0.95rem",
-                  textTransform: "uppercase",
-                  transition: "all 0.3s ease",
-                  position: "relative",
-                  padding: "8px 0"
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = "#f8e6c3";
-                  e.target.style.textShadow = "0 0 8px rgba(248, 230, 195, 0.6)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = "#ffffff";
-                  e.target.style.textShadow = "none";
-                }}
-              >
-                My Consignments
-              </Link>
-            </li>
-            
-            <li className="nav-item mx-2">
-              <Link 
-                className="nav-link px-3" 
-                to="/CreateConsign"
-                style={{
-                  color: "#ffffff",
-                  fontWeight: "600",
-                  letterSpacing: "1px",
-                  fontSize: "0.95rem",
-                  textTransform: "uppercase",
-                  transition: "all 0.3s ease",
-                  position: "relative",
-                  padding: "8px 0"
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.color = "#f8e6c3";
-                  e.target.style.textShadow = "0 0 8px rgba(248, 230, 195, 0.6)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.color = "#ffffff";
-                  e.target.style.textShadow = "none";
-                }}
-              >
-                New Consignment
-              </Link>
-            </li>
+            {user && (
+              <>
+                <li className="nav-item mx-2">
+                  <Link 
+                    className="nav-link px-3" 
+                    to="/consigns"
+                    style={{
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      letterSpacing: "1px",
+                      fontSize: "0.95rem",
+                      textTransform: "uppercase",
+                      transition: "all 0.3s ease",
+                      position: "relative",
+                      padding: "8px 0"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.color = "#f8e6c3";
+                      e.target.style.textShadow = "0 0 8px rgba(248, 230, 195, 0.6)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.color = "#ffffff";
+                      e.target.style.textShadow = "none";
+                    }}
+                  >
+                    My Consignments
+                  </Link>
+                </li>
+                
+                <li className="nav-item mx-2">
+                  <Link 
+                    className="nav-link px-3" 
+                    to="/CreateConsign"
+                    style={{
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      letterSpacing: "1px",
+                      fontSize: "0.95rem",
+                      textTransform: "uppercase",
+                      transition: "all 0.3s ease",
+                      position: "relative",
+                      padding: "8px 0"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.color = "#f8e6c3";
+                      e.target.style.textShadow = "0 0 8px rgba(248, 230, 195, 0.6)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.color = "#ffffff";
+                      e.target.style.textShadow = "none";
+                    }}
+                  >
+                    New Consignment
+                  </Link>
+                </li>
+              </>
+            )}
             
             <li className="nav-item mx-2">
               <Link 
@@ -176,37 +171,71 @@ const NavbarUser = () => {
               </Link>
             </li>
             
-            <li className="nav-item ms-lg-3 mt-3 mt-lg-0">
-              <button 
-                className="btn px-4 py-2" 
-                onClick={handleLogout}
-                style={{
-                  backgroundColor: "transparent",
-                  color: "#d4af37",
-                  border: "2px solid #d4af37",
-                  fontWeight: "600",
-                  letterSpacing: "1px",
-                  fontSize: "0.95rem",
-                  textTransform: "uppercase",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 2px 8px rgba(212, 175, 131, 0.2)"
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "rgba(212, 175, 131, 0.15)";
-                  e.target.style.color = "#f8e6c3";
-                  e.target.style.borderColor = "#f8e6c3";
-                  e.target.style.boxShadow = "0 2px 12px rgba(248, 230, 195, 0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.color = "#d4af37";
-                  e.target.style.borderColor = "#d4af37";
-                  e.target.style.boxShadow = "0 2px 8px rgba(212, 175, 131, 0.2)";
-                }}
-              >
-                Logout
-              </button>
-            </li>
+            {user ? (
+              <li className="nav-item ms-lg-3 mt-3 mt-lg-0">
+                <button 
+                  className="btn px-4 py-2" 
+                  onClick={handleLogout}
+                  style={{
+                    backgroundColor: "transparent",
+                    color: "#d4af37",
+                    border: "2px solid #d4af37",
+                    fontWeight: "600",
+                    letterSpacing: "1px",
+                    fontSize: "0.95rem",
+                    textTransform: "uppercase",
+                    transition: "all 0.3s ease",
+                    boxShadow: "0 2px 8px rgba(212, 175, 131, 0.2)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = "rgba(212, 175, 131, 0.15)";
+                    e.target.style.color = "#f8e6c3";
+                    e.target.style.borderColor = "#f8e6c3";
+                    e.target.style.boxShadow = "0 2px 12px rgba(248, 230, 195, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = "transparent";
+                    e.target.style.color = "#d4af37";
+                    e.target.style.borderColor = "#d4af37";
+                    e.target.style.boxShadow = "0 2px 8px rgba(212, 175, 131, 0.2)";
+                  }}
+                >
+                  Logout
+                </button>
+              </li>
+            ) : (
+              <li className="nav-item ms-lg-3 mt-3 mt-lg-0">
+                <Link 
+                  className="btn px-4 py-2" 
+                  to="/login"
+                  style={{
+                    backgroundColor: "transparent",
+                    color: "#d4af37",
+                    border: "2px solid #d4af37",
+                    fontWeight: "600",
+                    letterSpacing: "1px",
+                    fontSize: "0.95rem",
+                    textTransform: "uppercase",
+                    transition: "all 0.3s ease",
+                    boxShadow: "0 2px 8px rgba(212, 175, 131, 0.2)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = "rgba(212, 175, 131, 0.15)";
+                    e.target.style.color = "#f8e6c3";
+                    e.target.style.borderColor = "#f8e6c3";
+                    e.target.style.boxShadow = "0 2px 12px rgba(248, 230, 195, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = "transparent";
+                    e.target.style.color = "#d4af37";
+                    e.target.style.borderColor = "#d4af37";
+                    e.target.style.boxShadow = "0 2px 8px rgba(212, 175, 131, 0.2)";
+                  }}
+                >
+                  Login
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       </div>

@@ -6,6 +6,8 @@ import mysql.connector
 import os
 from selenium import webdriver
 from time import sleep
+import openpyxl
+from datetime import datetime
 
 class ConsignmentTest:
     def __init__(self):
@@ -122,17 +124,6 @@ class ConsignmentTest:
         ]
         
         self.registration_test_cases = [
-            # {
-            #     "case_name": "Incorrect OTP verification",
-            #     "username": "testuser",
-            #     "email": "khanhhhadz@gmail.com",
-            #     "password": "Valid@123",
-            #     "email_address": "dthuhuong133@gmail.com",
-            #     "email_password": "uqljpuvwdcclunua",
-            #     "otp": "999999",
-            #     "expected_result": False,
-            #     "description": "Check system error when entering wrong OTP"
-            # },
             {
                 "case_name": "Successful registration with valid email",
                 "username": "khanh",
@@ -163,13 +154,13 @@ class ConsignmentTest:
             }
         ]
 
-        # Test results statistics
+        # Enhanced test results tracking
         self.test_results = {
-            'registration': {'success': 0, 'fail': 0},
-            'login': {'success': 0, 'fail': 0},
-            'consignment': {'success': 0, 'fail': 0},
-            'order': {'success': 0, 'fail': 0},
-            'search': {'success': 0, 'fail': 0}
+            'registration': {'cases': [], 'success': 0, 'fail': 0},
+            'login': {'cases': [], 'success': 0, 'fail': 0},
+            'consignment': {'cases': [], 'success': 0, 'fail': 0},
+            'order': {'cases': [], 'success': 0, 'fail': 0},
+            'search': {'cases': [], 'success': 0, 'fail': 0}
         }
         
         # Create test_images directory if not exists
@@ -180,12 +171,19 @@ class ConsignmentTest:
             print("[SYSTEM ERROR] Cannot run tests due to WebDriver error")
             return
         
-        # Run registration test cases
+        # Run registration test cases 
         print("\n=== Running registration tests ===")
         for case in self.registration_test_cases:
             print(f"\n=== Starting test case: {case['case_name']} ===")
             try:
                 result = self.registration_handler.run_registration_test_case(case)
+                test_case_result = {
+                    'name': case['case_name'],
+                    'status': 'Pass' if result else 'Fail',
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.test_results['registration']['cases'].append(test_case_result)
+                
                 if result:
                     self.test_results['registration']['success'] += 1
                 else:
@@ -194,6 +192,12 @@ class ConsignmentTest:
             except Exception as e:
                 print(f"-> [SYSTEM ERROR] Error running test case: {str(e)}")
                 self.test_results['registration']['fail'] += 1
+                self.test_results['registration']['cases'].append({
+                    'name': case['case_name'],
+                    'status': 'Error',
+                    'error': str(e),
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
 
         for account in self.accounts:
             print(f"\n=== Starting test with account: {account['email']} ({account['description']}) ===")
@@ -203,6 +207,13 @@ class ConsignmentTest:
             try:
                 sleep(2)
                 login_success = self.login_handler.login(account)
+                test_case_result = {
+                    'name': f"Login: {account['email']}",
+                    'status': 'Pass' if login_success else 'Fail',
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                self.test_results['login']['cases'].append(test_case_result)
+                
                 if login_success:
                     self.test_results['login']['success'] += 1
                 else:
@@ -237,6 +248,13 @@ class ConsignmentTest:
                         try:
                             print(f"\n=== Running test case: {consignment_case['case_name']} ===")
                             create_success = self.consignment_handler.test_create_consignment(consignment_case)
+                            test_case_result = {
+                                'name': consignment_case['case_name'],
+                                'status': 'Pass' if create_success else 'Fail',
+                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            self.test_results['consignment']['cases'].append(test_case_result)
+                            
                             if create_success:
                                 self.test_results['consignment']['success'] += 1
                             else:
@@ -252,6 +270,13 @@ class ConsignmentTest:
                         try:
                             print(f"\n=== Running test case: {order_case['case_name']} ===")
                             add_success = self.order_handler.test_add_order(order_case)
+                            test_case_result = {
+                                'name': order_case['case_name'],
+                                'status': 'Pass' if add_success else 'Fail',
+                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            self.test_results['order']['cases'].append(test_case_result)
+                            
                             if add_success:
                                 self.test_results['order']['success'] += 1
                             else:
@@ -266,6 +291,13 @@ class ConsignmentTest:
                         try:
                             print(f"\n=== Searching for order #{search_case['order_id']} ({search_case['description']}) ===")
                             search_success = self.order_handler.test_search_order(search_case["order_id"])
+                            test_case_result = {
+                                'name': f"Search order #{search_case['order_id']}",
+                                'status': 'Pass' if search_success else 'Fail',
+                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            self.test_results['search']['cases'].append(test_case_result)
+                            
                             if search_success:
                                 self.test_results['search']['success'] += 1
                             else:
@@ -277,7 +309,7 @@ class ConsignmentTest:
                 else:
                     print(f"-> [VALIDATE] Role '{role}' not supported")
             
-            # Logout after testing
+            # Logout after testing 
             if login_success:
                 try:
                     self.login_handler.logout()
@@ -285,8 +317,9 @@ class ConsignmentTest:
                 except Exception as e:
                     print(f"-> [SYSTEM ERROR] Logout error: {str(e)}")
 
-        # Show test summary
+        # Show test summary và export Excel
         self.show_test_summary()
+        self.export_to_excel()
 
     def show_test_summary(self):
         print("\n=== TEST RESULTS SUMMARY ===")
@@ -296,19 +329,61 @@ class ConsignmentTest:
         print(f"4. Add order: Success {self.test_results['order']['success']}, Fail {self.test_results['order']['fail']}")
         print(f"5. Search order: Success {self.test_results['search']['success']}, Fail {self.test_results['search']['fail']}")
         
-        total_success = (self.test_results['registration']['success'] + 
-                        self.test_results['login']['success'] + 
-                        self.test_results['consignment']['success'] + 
-                        self.test_results['order']['success'] + 
-                        self.test_results['search']['success'])
-        
-        total_fail = (self.test_results['registration']['fail'] + 
-                      self.test_results['login']['fail'] + 
-                      self.test_results['consignment']['fail'] + 
-                      self.test_results['order']['fail'] + 
-                      self.test_results['search']['fail'])
+        total_success = sum([v['success'] for k, v in self.test_results.items()])
+        total_fail = sum([v['fail'] for k, v in self.test_results.items()])
         
         print(f"\nTOTAL: {total_success} test cases passed, {total_fail} test cases failed")
+
+    def export_to_excel(self):
+        try:
+            wb = openpyxl.Workbook()
+            summary_sheet = wb.active
+            summary_sheet.title = "Test Summary"
+            
+            # Summary headers
+            summary_sheet.append(["Test Category", "Passed", "Failed", "Total"])
+            
+            # Summary data
+            for category in self.test_results:
+                passed = self.test_results[category]['success']
+                failed = self.test_results[category]['fail']
+                total = passed + failed
+                summary_sheet.append([category.capitalize(), passed, failed, total])
+            
+            # Detailed results sheet
+            details_sheet = wb.create_sheet("Detailed Results")
+            details_sheet.append(["Test Case", "Category", "Status", "Timestamp"])
+            
+            for category in self.test_results:
+                for case in self.test_results[category]['cases']:
+                    details_sheet.append([
+                        case['name'],
+                        category.capitalize(),
+                        case['status'],
+                        case['timestamp']
+                    ])
+            
+            # Auto-adjust columns
+            for sheet in wb:
+                for column in sheet.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = (max_length + 2) * 1.2
+                    sheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Save file
+            filename = f"Test_Results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            wb.save(filename)
+            print(f"\n[SYSTEM] Test results exported to {filename}")
+            
+        except Exception as e:
+            print(f"\n[SYSTEM ERROR] Failed to export to Excel: {str(e)}")
 
     def cleanup(self):
         if self.driver:

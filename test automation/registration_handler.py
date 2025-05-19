@@ -31,17 +31,17 @@ class RegistrationHandler:
             )
             username_field.clear()
             username_field.send_keys(username)
-            sleep(1)
+            sleep(2)
 
             email_field = self.driver.find_element(By.CSS_SELECTOR, "input[name='email']")
             email_field.clear()
             email_field.send_keys(email)
-            sleep(1)
+            sleep(2)
 
             password_field = self.driver.find_element(By.CSS_SELECTOR, "input[name='password']")
             password_field.clear()
             password_field.send_keys(password)
-            sleep(1)
+            sleep(2)
             return True
         except Exception as e:
             print(f"Error filling registration form: {str(e)}")
@@ -147,7 +147,7 @@ class RegistrationHandler:
                     if i < len(otp_fields):
                         otp_fields[i].clear()
                         otp_fields[i].send_keys(digit)
-                        sleep(0.3)
+                        sleep(2)
             
             verify_button = self.wait.until(
                 EC.element_to_be_clickable(
@@ -155,6 +155,7 @@ class RegistrationHandler:
                 )
             )
             verify_button.click()
+            sleep(2)
             return True
             
         except Exception as e:
@@ -169,19 +170,19 @@ class RegistrationHandler:
             )
             
             otp_field.clear()
-            sleep(0.5)
+            sleep(2)
             
             for digit in otp:
                 otp_field.send_keys(digit)
-                sleep(0.2)
+                sleep(2)
             
-            sleep(0.5)
+            sleep(2)
 
             verify_button = self.wait.until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='verify-button']"))
             )
             verify_button.click()
-            
+            sleep(2)
             try:
                 error_modal = self.wait.until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='alert-modal']"))
@@ -207,7 +208,7 @@ class RegistrationHandler:
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='close-modal-button']"))
                 )
                 close_button.click()
-                sleep(1)
+                sleep(2)
                 return True
             return False
         except Exception:
@@ -265,9 +266,10 @@ class RegistrationHandler:
                             )
                         
                         if not otp:
+                            sleep(2)
                             print("Failed to get OTP - marking test case as failed")
                             return False
-
+                        sleep(2)
                         result = self.verify_otp_step(otp)
                     else:
                         result = True
@@ -280,7 +282,7 @@ class RegistrationHandler:
                         self.wait.until(
                             EC.text_to_be_present_in_element((By.TAG_NAME, "h2"), "OTP VERIFICATION"))
                         print("Reached OTP verification step")
-                        
+                        sleep(2)
                         otp = test_case.get("otp", "123456")
                         result = self.verify_invalid_otp(otp)
                     else:
@@ -291,6 +293,7 @@ class RegistrationHandler:
                             self.wait.until(
                                 EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='alert-modal']")))
                             print("Found error modal as expected")
+                            sleep(2)
                             result = True
                 except TimeoutException:
                     print("Error modal not found when expected")

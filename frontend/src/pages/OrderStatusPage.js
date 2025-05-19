@@ -122,7 +122,8 @@ function ProductSearchPage() {
         const orderData = {
             products: selectedProducts.map(product => ({
                 productId: product.ID,
-                quantity: product.quantity || 1
+                quantity: product.quantity || 1,
+                price: getProductPrice(product)
             })),
             customerInfo: {
                 name: customerInfo.name,
@@ -135,12 +136,11 @@ function ProductSearchPage() {
         try {
             const response = await createOrdersAPI(localStorage.getItem('token'), orderData);
             
-            const orderId = response.orderId;
-            
-            if (!orderId) {
+            if (!response.orderId) {
                 throw new Error("Server did not return order ID");
             }
 
+            const orderId = response.orderId;
             setCreatedOrderId(orderId);
             showAlert(
                 `Order created successfully! Order ID: ${orderId}`,
@@ -148,16 +148,19 @@ function ProductSearchPage() {
                 5000
             );
 
-            setSelectedProducts([]);
-            setCustomerInfo({ name: '', phone: '', address: '', age: '' });
-            setSearchInput('');
-            clearSearch();
-
-            // Fetch invoice data
-            const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
-            setInvoiceData(invoice);
+            // Tạo invoiceData từ selectedProducts thay vì gọi API
+            const invoice = {
+                orderId: orderId,
+                customerInfo: customerInfo,
+                products: selectedProducts.map(product => ({
+                    product_name: product.Product_name,
+                    price: getProductPrice(product),
+                    quantity: product.quantity || 1
+                })),
+                total_amount: calculateTotal()
+            };
             
-            // Show print confirmation dialog
+            setInvoiceData(invoice);
             setShowPrintConfirmation(true);
             
         } catch (error) {
@@ -175,11 +178,30 @@ function ProductSearchPage() {
         }
     };
 
+    const clearForm = () => {
+        setSelectedProducts([]);
+        setCustomerInfo({
+            name: '',
+            phone: '',
+            address: '',
+            age: ''
+        });
+        setSearchInput('');
+        setCreatedOrderId(null);
+        setInvoiceData(null);
+    };
+
     const handlePrintInvoice = () => {
         setShowPrintConfirmation(false);
         
-        // Create a new window for printing
         const printWindow = window.open('', '_blank');
+        
+        const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
@@ -204,6 +226,13 @@ function ProductSearchPage() {
                     .table th, .table td {
                         padding: 8px;
                     }
+                    body {
+                        font-family: Arial, sans-serif;
+                    }
+                    .total-row {
+                        font-weight: bold;
+                        background-color: #f8f9fa;
+                    }
                 </style>
             </head>
             <body>
@@ -211,7 +240,7 @@ function ProductSearchPage() {
                     <div class="print-header">
                         <h2>SALES INVOICE</h2>
                         <p>Order ID: #${createdOrderId}</p>
-                        <p>Date: ${new Date().toLocaleDateString()}</p>
+                        <p>Date: ${currentDate}</p>
                     </div>
 
                     <div class="customer-info">
@@ -246,9 +275,9 @@ function ProductSearchPage() {
                                 `).join('')}
                             </tbody>
                             <tfoot>
-                                <tr>
+                                <tr class="total-row">
                                     <th colspan="4" class="text-end">Total:</th>
-                                    <th>${calculateTotal().toLocaleString()} VND</th>
+                                    <th>${parseFloat(calculateTotal()).toLocaleString()} VND</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -256,7 +285,7 @@ function ProductSearchPage() {
 
                     <div class="text-center mt-4 no-print">
                         <button class="btn btn-primary" onclick="window.print()">Print Invoice</button>
-                        <button class="btn btn-secondary ms-2" onclick="window.close()">Close</button>
+                        <button class="btn btn-secondary ms-2" onclick="window.close(); window.opener.postMessage('clearForm', '*');">Close</button>
                     </div>
                 </div>
                 <script>
@@ -265,11 +294,26 @@ function ProductSearchPage() {
                             window.print();
                         }, 500);
                     };
+                    
+                    // Listen for messages from the parent window
+                    window.addEventListener('message', function(event) {
+                        if (event.data === 'closeWindow') {
+                            window.close();
+                        }
+                    });
                 </script>
             </body>
             </html>
         `);
         printWindow.document.close();
+        
+        // Add event listener for when the print window closes
+        const checkPrintWindowClosed = setInterval(() => {
+            if (printWindow.closed) {
+                clearInterval(checkPrintWindowClosed);
+                clearForm();
+            }
+        }, 500);
     };
 
     const handleViewInvoice = async () => {
@@ -317,7 +361,7 @@ function ProductSearchPage() {
     };
 
     const getProductPrice = (product) => {
-        return product.Consignment_price || product.Sale_price;
+        return product.Consignment_price || product.Sale_price || 0;
     };
 
     const calculateTotal = () => {
@@ -420,17 +464,41 @@ function ProductSearchPage() {
                                 <button 
                                     type="button" 
                                     className="btn-close" 
-                                    onClick={() => setShowPrintConfirmation(false)}
+                                    onClick={() => {
+                                        setShowPrintConfirmation(false);
+                                        clearForm();
+                                    }}
                                 ></button>
                             </div>
                             <div className="modal-body">
                                 <p>Do you want to print the invoice for order #${createdOrderId}?</p>
+                                <div className="mt-3">
+                                    <strong>Customer:</strong> {customerInfo.name || 'Not provided'}
+                                </div>
+                                <div className="mt-2">
+                                    <strong>Products:</strong>
+                                    <ul>
+                                        {selectedProducts.map(product => (
+                                            <li key={product.ID}>
+                                                {product.Product_name} - 
+                                                {parseFloat(getProductPrice(product)).toLocaleString()} VND × 
+                                                {product.quantity || 1}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="mt-2">
+                                    <strong>Total:</strong> {calculateTotal().toLocaleString()} VND
+                                </div>
                             </div>
                             <div className="modal-footer">
                                 <button 
                                     type="button" 
                                     className="btn btn-secondary" 
-                                    onClick={() => setShowPrintConfirmation(false)}
+                                    onClick={() => {
+                                        setShowPrintConfirmation(false);
+                                        clearForm();
+                                    }}
                                 >
                                     Skip
                                 </button>
@@ -533,7 +601,6 @@ function ProductSearchPage() {
                                                                         <div>
                                                                             {parseFloat(getProductPrice(product)).toLocaleString()} VND
                                                                         </div>
-                                                                        
                                                                     </div>
                                                                 </div>
                                                             </li>
@@ -555,7 +622,6 @@ function ProductSearchPage() {
                                     </div>
                                 )}
 
-                                {/* Selected products table */}
                                 {selectedProducts.length > 0 && (
                                     <div className="mt-4">
                                         <h5>Selected Products</h5>
@@ -672,11 +738,7 @@ function ProductSearchPage() {
                                     <button
                                         className="btn btn-outline-secondary"
                                         disabled={isSubmitting || selectedProducts.length === 0}
-                                        onClick={() => {
-                                            setSelectedProducts([]);
-                                            setCustomerInfo({ name: '', phone: '', address: '', age: '' });
-                                            showAlert('Cleared all products from order', 'info');
-                                        }}
+                                        onClick={clearForm}
                                     >
                                         Clear All
                                     </button>
