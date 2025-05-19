@@ -6,7 +6,7 @@ const createConsignment = async (productList, userId) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. Tạo đơn ký gửi
+        // 1. Create consignment ticket
         const [ticketResult] = await connection.query(
             `INSERT INTO th_consignment_ticket 
              (User_id, Status, Create_date)
@@ -15,9 +15,9 @@ const createConsignment = async (productList, userId) => {
         );
         const ticketId = ticketResult.insertId;
 
-        // 2. Duyệt từng sản phẩm để thêm
+        // 2. Process each product to add
         for (const productData of productList) {
-            // 2.1 Lấy hoặc thêm Brand
+            // 2.1 Get or add Brand
             let [brandRows] = await connection.query(
                 `SELECT ID FROM th_brand WHERE Brand_name = ?`,
                 [productData.Brand_name]
@@ -33,7 +33,7 @@ const createConsignment = async (productList, userId) => {
                 brandId = brandRows[0].ID;
             }
 
-            // 2.2 Lấy hoặc thêm Product Type
+            // 2.2 Get or add Product Type
             let [typeRows] = await connection.query(
                 `SELECT ID FROM th_product_type WHERE Product_type_name = ?`,
                 [productData.Product_type_name]
@@ -49,7 +49,7 @@ const createConsignment = async (productList, userId) => {
                 productTypeId = typeRows[0].ID;
             }
 
-
+            // 2.3 Create product
             const [productResult] = await connection.query(
                 `INSERT INTO th_product 
                 (Product_name, Original_price, Sale_price, Status, Brand_id, Product_type_id, Image)
@@ -60,12 +60,13 @@ const createConsignment = async (productList, userId) => {
                     productData.Sale_price,
                     brandId,
                     productTypeId,
-                    productData.Image || '../Images/default.png' // Sử dụng ảnh mặc định nếu không có
+                    productData.Image || '../Images/default.png' // Use default image if none provided
                 ]
             );
             
             const productId = productResult.insertId;
 
+            // 2.4 Add product details if they exist
             if (productData.details) {
                 const sellingPrice = productData.Sale_price + (productData.Sale_price * 1.5);
                 
@@ -73,30 +74,27 @@ const createConsignment = async (productList, userId) => {
                     `INSERT INTO th_consignment_ticket_product_detail
                     (Ticket_id, Product_id, Quantity, Price)
                     VALUES (?, ?, ?, ?)`,
-                    [ticketId, productId, productData.details.Quantity, sellingPrice]  // Sử dụng sellingPrice đã tính
+                    [ticketId, productId, productData.details.Quantity, sellingPrice]  // Use calculated sellingPrice
                 );
-                
             }
-            
-
         }
 
-        // 3. Commit giao dịch
+        // 3. Commit transaction
         await connection.commit();
 
         return {
             success: true,
             ticketId,
             productList,
-            message: "Tạo đơn ký gửi thành công"
+            message: "Consignment created successfully"
         };
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error("Lỗi khi tạo đơn ký gửi:", error);
+        console.error("Error creating consignment:", error);
         throw {
             success: false,
-            message: error.message || "Lỗi khi tạo đơn ký gửi",
+            message: error.message || "Error creating consignment",
             errorCode: error.code || "UNKNOWN"
         };
     } finally {

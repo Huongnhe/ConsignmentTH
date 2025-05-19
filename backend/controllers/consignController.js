@@ -6,15 +6,15 @@ const fetchUserProducts = async (req, res) => {
         console.log("UserID:", userId);
 
         if (!userId) {
-            return res.status(401).json({ error: "Người dùng chưa đăng nhập" });
+            return res.status(401).json({ error: "User not logged in" });
         }
 
         const products = await getUserProducts(userId);
-        console.log("Dữ liệu sản phẩm lấy từ DB:", products);
+        console.log("Product data retrieved from DB:", products);
         res.json(products);
     } catch (err) {
-        console.error("Lỗi khi lấy sản phẩm:", err);
-        res.status(500).json({ error: "Lỗi server khi lấy sản phẩm" });
+        console.error("Error fetching products:", err);
+        res.status(500).json({ error: "Server error while fetching products" });
     }
 };
 

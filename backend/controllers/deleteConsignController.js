@@ -5,13 +5,13 @@ const deleteProductInConsignment = async (req, res) => {
     const { consignmentId, productId } = req.params;
 
     if (!consignmentId || !productId) {
-        return res.status(400).json({ error: "Thiếu ID đơn ký gửi hoặc ID sản phẩm" });
+        return res.status(400).json({ error: "Missing consignment ID or product ID" });
     }
 
     try {
         const consignment = await getConsignmentDetail(consignmentId);
         if (!consignment) {
-            return res.status(404).json({ message: "Không tìm thấy đơn ký gửi" });
+            return res.status(404).json({ message: "Consignment not found" });
         }
 
         const productExistsInConsignment = consignment.Products?.some(
@@ -19,33 +19,33 @@ const deleteProductInConsignment = async (req, res) => {
         );
 
         if (!productExistsInConsignment) {
-            return res.status(404).json({ message: "Không tìm thấy sản phẩm trong đơn ký gửi này" });
+            return res.status(404).json({ message: "Product not found in this consignment" });
         }
 
         const { success, ticketDeleted, productDeleted } = await deleteProductFromConsignment(consignmentId, productId);
 
         if (!success) {
-            return res.status(500).json({ message: "Không thể xóa sản phẩm" });
+            return res.status(500).json({ message: "Failed to delete product" });
         }
 
-        // ⚠️ Lấy lại đơn ký gửi để xem còn sản phẩm hay không
+        // ⚠️ Get updated consignment to check remaining products
         const updatedConsignment = await getConsignmentDetail(consignmentId);
 
-        // ✅ Nếu đơn ký gửi đã bị xóa
+        // ✅ If consignment was deleted (no products left)
         if (!updatedConsignment || !updatedConsignment.Products || updatedConsignment.Products.length === 0) {
             return res.json({
                 success: true,
-                message: "Đơn ký gửi đã bị xóa vì không còn sản phẩm.",
+                message: "Consignment was deleted because it contained no more products.",
                 ticketDeleted,
                 productDeleted
             });
         }
 
-        // ✅ Nếu chỉ còn 1 sản phẩm
+        // ✅ If only one product remains
         if (updatedConsignment.Products.length === 1 && !ticketDeleted) {
             return res.json({
                 success: true,
-                message: "Lưu ý: Việc xóa sản phẩm cuối cùng sẽ làm xóa luôn đơn ký gửi của bạn.",
+                message: "Note: Deleting the last product will also delete your consignment.",
                 remainingProducts: 1,
                 ticketDeleted,
                 productDeleted
@@ -54,16 +54,16 @@ const deleteProductInConsignment = async (req, res) => {
 
         return res.json({
             success: true,
-            message: "Xóa sản phẩm thành công",
+            message: "Product deleted successfully",
             remainingProducts: updatedConsignment.Products.length,
             ticketDeleted,
             productDeleted
         });
 
     } catch (err) {
-        console.error("Lỗi khi xóa sản phẩm:", err);
+        console.error("Error deleting product:", err);
         return res.status(500).json({
-            error: "Lỗi server khi xóa sản phẩm",
+            error: "Server error while deleting product",
             detail: err.message
         });
     }
@@ -73,11 +73,11 @@ const deleteConsignmentID = async (req, res) => {
     const { consignmentId } = req.params;
 
     if (!consignmentId) {
-        return res.status(400).json({ error: "Thiếu ID đơn ký gửi" });
+        return res.status(400).json({ error: "Missing consignment ID" });
     }
 
     try {
-        // Gọi hàm xóa đơn ký gửi (dùng đúng tên hàm là `deleteConsignment`)
+        // Call the delete consignment function
         const { success, message } = await deleteConsignment(consignmentId);
 
         if (!success) {
@@ -86,13 +86,13 @@ const deleteConsignmentID = async (req, res) => {
 
         return res.json({
             success: true,
-            message: message || "Đơn ký gửi đã được xóa thành công"
+            message: message || "Consignment deleted successfully"
         });
 
     } catch (err) {
-        console.error("Lỗi khi xóa đơn ký gửi:", err);
+        console.error("Error deleting consignment:", err);
         return res.status(500).json({
-            error: "Lỗi server khi xóa đơn ký gửi",
+            error: "Server error while deleting consignment",
             detail: err.message
         });
     }

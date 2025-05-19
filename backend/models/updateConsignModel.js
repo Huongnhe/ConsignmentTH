@@ -26,7 +26,7 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
 
     if (missingFields.length > 0) {
         console.error("Missing/invalid fields:", missingFields);
-        throw new Error(`Thiếu thông tin bắt buộc hoặc dữ liệu không hợp lệ: ${missingFields.join(', ')}`);
+        throw new Error(`Required fields missing or invalid data: ${missingFields.join(', ')}`);
     }
 
     const connection = await db.getConnection();
@@ -44,7 +44,7 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
         );
 
         if (productCheck.length === 0 || consignmentCheck.length === 0) {
-            throw new Error("Sản phẩm hoặc phiếu consignment không tồn tại");
+            throw new Error("Product or consignment ticket does not exist");
         }
 
         if (!Product_Image || Product_Image === null || Product_Image.trim() === '') {
@@ -62,7 +62,7 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
         );
 
         if (brandResults.length === 0 || typeResults.length === 0) {
-            throw new Error("Thương hiệu hoặc loại sản phẩm không tồn tại");
+            throw new Error("Brand or product type does not exist");
         }
 
         const brandId = brandResults[0].ID;
@@ -104,7 +104,7 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
 
         return {
             success: true,
-            message: "Cập nhật sản phẩm và thông tin consignment thành công",
+            message: "Successfully updated product and consignment information",
             updatedFields: {
                 Product_name,
                 Brand_name,
@@ -131,7 +131,7 @@ const updateConsignment = async (productId, consignmentId, updatedData) => {
             updatedData
         });
 
-        throw new Error("Cập nhật thất bại: " + error.message);
+        throw new Error("Update failed: " + error.message);
     }
 };
 

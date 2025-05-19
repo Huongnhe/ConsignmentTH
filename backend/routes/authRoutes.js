@@ -13,7 +13,7 @@ const { updateConsignmentProduct } = require("../controllers/updateConsignmentPr
 const { deleteProductInConsignment, deleteConsignmentID } = require("../controllers/deleteConsignController");
 const saleController = require("../controllers/orderConsignController");
 
-// Controller cho admin
+// Admin controllers
 const {
   fetchAllConsignmentTickets,
   fetchPendingConsignmentTickets,
@@ -25,14 +25,14 @@ const {
 const router = express.Router({ limit: '50mb' });
 
 // ============ AUTHENTICATION ROUTES ============
-// Đăng ký thông thường (không OTP)
+// Regular registration (without OTP)
 router.post("/register", register);
 
-// Đăng ký với OTP (2 bước)
-router.post("/register/otp", registerWithOTPStep1); // Bước 1: Gửi OTP
-router.post("/register/otp/verify", registerWithOTPStep2); // Bước 2: Xác thực OTP
+// Registration with OTP (2 steps)
+router.post("/register/otp", registerWithOTPStep1); // Step 1: Send OTP
+router.post("/register/otp/verify", registerWithOTPStep2); // Step 2: Verify OTP
 
-// Đăng nhập
+// Login
 router.post("/login", login);
 
 // ============ USER ROUTES ============

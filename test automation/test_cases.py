@@ -103,14 +103,16 @@ class ConsignmentTest:
                 "product_name": "Adidas Ultraboost",
                 "customer_name": "Nguyễn Văn A",
                 "customer_phone": "0987654321",
-                "customer_age": "30"
+                "customer_age": "30",
+                "should_print": False 
             },
             {
                 "case_name": "Case 2 - Thêm đơn hàng không hợp lệ",
                 "product_name": "Nike Air Force 1",
                 "customer_name": "",
                 "customer_phone": "",
-                "customer_age": ""
+                "customer_age": "",
+                "should_print": True 
             }
         ]
 

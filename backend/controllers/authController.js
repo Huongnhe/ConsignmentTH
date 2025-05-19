@@ -8,7 +8,7 @@ const {
 } = require("../models/userModel");
 require("dotenv").config();
 
-// Hàm tạo token JWT
+// Function to generate JWT token
 function generateToken(user) {
     return jwt.sign(
         { id: user.ID, email: user.Email }, 
@@ -17,33 +17,33 @@ function generateToken(user) {
     );
 }
 
-// Đăng ký thông thường (không OTP)
+// Regular registration (without OTP)
 async function register(req, res) {
     try {
         const { username, email, password } = req.body;
 
         if (!username || !email || !password) {
-            return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin." });
+            return res.status(400).json({ message: "Please fill in all information." });
         }
 
         const existingUser = await getUserByEmail(email);
         if (existingUser) {
-            return res.status(400).json({ message: "Email đã tồn tại!" });
+            return res.status(400).json({ message: "Email already exists!" });
         }
 
         await createUser(username, email, password);
-        return res.status(201).json({ message: "Đăng ký thành công!" });
+        return res.status(201).json({ message: "Registration successful!" });
 
     } catch (error) {
-        console.error("Lỗi đăng ký:", error);
+        console.error("Registration error:", error);
         return res.status(500).json({ 
-            message: "Lỗi server", 
+            message: "Server error", 
             error: error.message 
         });
     }
 }
 
-// Đăng ký với OTP - Bước 1: Gửi OTP
+// OTP registration - Step 1: Send OTP
 async function registerWithOTPStep1(req, res) {
     try {
         const { username, email, password } = req.body;
@@ -52,41 +52,41 @@ async function registerWithOTPStep1(req, res) {
         return res.status(200).json(result);
 
     } catch (error) {
-        console.error("Lỗi gửi OTP:", error);
+        console.error("OTP sending error:", error);
         return res.status(400).json({ 
-            message: error.message || "Lỗi khi gửi OTP" 
+            message: error.message || "Error sending OTP" 
         });
     }
 }
 
-// Đăng ký với OTP - Bước 2: Xác thực OTP
+// OTP registration - Step 2: Verify OTP
 async function registerWithOTPStep2(req, res) {
     try {
         const { username, email, password, otp } = req.body;
 
-        // Xác thực OTP trước
+        // Verify OTP first
         const otpRecord = await getLatestOTPRecord(email);
         if (!otpRecord || otpRecord.OTP !== otp || new Date(otpRecord.Expires_At) < new Date()) {
-            return res.status(400).json({ message: "Mã OTP không hợp lệ hoặc đã hết hạn" });
+            return res.status(400).json({ message: "Invalid or expired OTP code" });
         }
 
-        // Kiểm tra email đã tồn tại chưa
+        // Check if email already exists
         const existingUser = await getUserByEmail(email);
         if (existingUser) {
-            return res.status(400).json({ message: "Email đã tồn tại trong hệ thống" });
+            return res.status(400).json({ message: "Email already exists in the system" });
         }
 
-        // Tạo user mới
+        // Create new user
         const user = await createUser(username, email, password);
         
-        // Đánh dấu email đã xác thực
+        // Mark email as verified
         await verifyOTPRecord(email);
         
-        // Tạo token
+        // Generate token
         const token = generateToken(user);
 
         return res.status(201).json({ 
-            message: "Đăng ký thành công!",
+            message: "Registration successful!",
             token,
             user: {
                 id: user.ID,
@@ -97,42 +97,42 @@ async function registerWithOTPStep2(req, res) {
         });
 
     } catch (error) {
-        console.error("Lỗi xác thực OTP:", error);
+        console.error("OTP verification error:", error);
         return res.status(400).json({ 
-            message: error.message || "Lỗi khi xác thực OTP" 
+            message: error.message || "Error verifying OTP" 
         });
     }
 }
 
-// Đăng nhập
+// Login
 async function login(req, res) {
     try {
         const { email, password } = req.body;
 
-        // Kiểm tra user tồn tại
+        // Check if user exists
         const user = await getUserByEmail(email);
         if (!user) {
-            return res.status(404).json({ message: "Email không tồn tại" });
+            return res.status(404).json({ message: "Email does not exist" });
         }
 
-        // Kiểm tra mật khẩu
+        // Check password
         if (user.Password_User !== password) {
-            return res.status(401).json({ message: "Sai mật khẩu" });
+            return res.status(401).json({ message: "Incorrect password" });
         }
 
-        // Tạo token
+        // Generate token
         const token = generateToken(user);
 
         return res.json({
-            message: "Đăng nhập thành công",
+            message: "Login successful",
             token,
             user
         });
 
     } catch (error) {
-        console.error("Lỗi đăng nhập:", error);
+        console.error("Login error:", error);
         return res.status(500).json({ 
-            message: "Lỗi server",
+            message: "Server error",
             error: error.message 
         });
     }

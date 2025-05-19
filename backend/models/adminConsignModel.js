@@ -1,6 +1,6 @@
 const db = require("../config/db");
 
-// Hàm dùng chung để nhóm các sản phẩm theo từng Ticket
+// Common function to group products by Ticket
 const groupTickets = (rows) => {
     const result = [];
     const ticketMap = {};
@@ -33,7 +33,7 @@ const groupTickets = (rows) => {
     return result;
 };
 
-// Lấy tất cả phiếu ký gửi
+// Get all consignment tickets with products
 const getAllTicketsWithProducts = async () => {
     const query = `
         SELECT 
@@ -60,7 +60,7 @@ const getAllTicketsWithProducts = async () => {
     return groupTickets(rows);
 };
 
-// Lấy phiếu ký gửi có trạng thái Pending
+// Get pending consignment tickets
 const getPendingTickets = async () => {
     const query = `
         SELECT 
@@ -88,7 +88,7 @@ const getPendingTickets = async () => {
     return groupTickets(rows);
 };
 
-// Lấy phiếu đã duyệt (Approved hoặc Rejected)
+// Get reviewed tickets (Approved or Rejected)
 const getReviewedTickets = async () => {
     const query = `
         SELECT 
@@ -116,7 +116,7 @@ const getReviewedTickets = async () => {
     return groupTickets(rows);
 };
 
-// Cập nhật trạng thái phiếu ký gửi
+// Update consignment ticket status
 const updateStatus = async (ticketID, newStatus) => {
     const query = `
         UPDATE th_consignment_ticket
@@ -127,12 +127,12 @@ const updateStatus = async (ticketID, newStatus) => {
         const [result] = await db.execute(query, [newStatus, ticketID]);
 
         if (result.affectedRows > 0) {
-            return { success: true, message: 'Trạng thái phiếu ký gửi đã được cập nhật.' };
+            return { success: true, message: 'Consignment ticket status updated successfully.' };
         } else {
-            return { success: false, message: 'Không tìm thấy phiếu ký gửi với ID này.' };
+            return { success: false, message: 'No consignment ticket found with this ID.' };
         }
     } catch (error) {
-        console.error('Lỗi khi cập nhật trạng thái phiếu ký gửi:', error);
+        console.error('Error updating consignment ticket status:', error);
         throw error;
     }
 };

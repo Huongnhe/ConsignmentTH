@@ -5,33 +5,33 @@ const saleController = {
         try {
             const { keyword } = req.query;
             if (!keyword || keyword.trim() === '') {
-                return res.status(400).json({ error: "Vui lòng nhập từ khóa tìm kiếm" });
+                return res.status(400).json({ error: "Please enter a search keyword" });
             }
 
             const products = await saleModel.searchProducts(keyword.trim());
             res.json(products);
         } catch (error) {
-            console.error("Lỗi khi tìm kiếm sản phẩm:", error);
-            res.status(500).json({ error: "Lỗi server khi tìm kiếm sản phẩm" });
+            console.error("Error searching products:", error);
+            res.status(500).json({ error: "Server error while searching products" });
         }
     },
 
     createOrder: async (req, res) => {
-        const { products, customerInfo } = req.body; // Chỉ lấy các field cần thiết
+        const { products, customerInfo } = req.body; // Only take necessary fields
 
         // Validate input
         if (!Array.isArray(products) || products.length === 0) {
-            return res.status(400).json({ error: "Danh sách sản phẩm không hợp lệ" });
+            return res.status(400).json({ error: "Invalid product list" });
         }
 
         if (!customerInfo || (!customerInfo.name && !customerInfo.phone)) {
-            return res.status(400).json({ error: "Thông tin khách hàng là bắt buộc" });
+            return res.status(400).json({ error: "Customer information is required" });
         }
 
         try {
             const orderData = {
                 products: products.map(item => ({
-                    productId: item.productId // Chỉ truyền productId
+                    productId: item.productId // Only pass productId
                 })),
                 customerInfo
             };
@@ -45,9 +45,9 @@ const saleController = {
                 invoice
             });
         } catch (error) {
-            console.error("Lỗi khi tạo đơn hàng:", error);
+            console.error("Error creating order:", error);
             res.status(500).json({
-                error: "Lỗi server khi tạo đơn hàng",
+                error: "Server error while creating order",
                 message: error.message
             });
         }
@@ -57,15 +57,15 @@ const saleController = {
         try {
             const orderId = parseInt(req.params.orderId);
             if (!orderId || isNaN(orderId)) {
-                return res.status(400).json({ error: "ID đơn hàng không hợp lệ" });
+                return res.status(400).json({ error: "Invalid order ID" });
             }
 
             const invoice = await saleModel.getInvoice(orderId);
             res.json(invoice);
         } catch (error) {
-            console.error("Lỗi khi lấy hóa đơn:", error);
+            console.error("Error fetching invoice:", error);
             res.status(500).json({
-                error: "Lỗi server khi lấy thông tin hóa đơn",
+                error: "Server error while retrieving invoice",
                 message: error.message
             });
         }

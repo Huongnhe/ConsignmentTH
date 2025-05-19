@@ -47,7 +47,7 @@ const getConsignmentDetail = async (consignmentId) => {
         Products: []
     };
 
-    // Chỉ thêm sản phẩm nếu tồn tại Product_ID
+    // Only add product if Product_ID exists
     for (const row of rows) {
         if (row.Product_ID !== null) {
             result.Products.push({
@@ -55,7 +55,7 @@ const getConsignmentDetail = async (consignmentId) => {
                 Product_Name: row.Product_Name,
                 Sale_Price: row.Sale_Price,
                 Original_Price: row.Original_Price,
-                Sale_price : row.Sale_price,
+                Sale_price: row.Sale_price,
                 Product_Status: row.Product_Status,
                 Product_Image: row.Product_Image,
                 Brand_Name: row.Brand_Name,

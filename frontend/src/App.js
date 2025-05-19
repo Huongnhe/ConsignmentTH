@@ -11,6 +11,7 @@ import AdminConsign from "./pages/AdminConsign";
 import HomePagePublic from "./pages/HomePagePublic";
 import OrderPage from "./pages/OrderStatusPage";
 import InvoiceDetailPage from './pages/InvoiceDetailPage';
+import ContactForm from './pages/UserContactPage';
 import Footer from "./pages/Footer";
 
 import { AuthProvider, AuthContext } from "./context/AuthContext";
@@ -64,6 +65,7 @@ const AppContent = () => {
         <Route path="/consigns" element={<PrivateRoute element={<ConsignPage />} />} />
         <Route path="/CreateConsign" element={<PrivateRoute element={<CreateConsign />} />} />
         <Route path="/detailConsign/:id" element={<PrivateRoute element={<ConsignDetailPage />} />} />
+        <Route path="/UserContact" element={<PrivateRoute element={<ContactForm />} />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<PrivateRoute element={<HomePageAdmin />} requiredRole="Manager" />} />

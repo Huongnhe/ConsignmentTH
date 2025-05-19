@@ -2,32 +2,32 @@ const { getConsignmentDetail } = require("../models/detailConsignModel");
 
 const fetchConsignmentDetail = async (req, res) => {
     const consignmentId = req.params.id;
-    console.log("ID được truyền vào:", consignmentId);
+    console.log("Passed ID:", consignmentId);
 
     if (!consignmentId) {
-        return res.status(400).json({ error: "Thiếu ID đơn ký gửi" });
+        return res.status(400).json({ error: "Missing consignment ID" });
     }
 
     try {
         const consignment = await getConsignmentDetail(consignmentId);
 
         if (!consignment) {
-            return res.status(404).json({ message: "Không tìm thấy đơn ký gửi" });
+            return res.status(404).json({ message: "Consignment not found" });
         }
 
-        // Kiểm tra nếu có sản phẩm nào không
+        // Check if there are any products
         if (!consignment.Products || consignment.Products.length === 0) {
-            return res.status(404).json({ message: "Đơn hàng không có sản phẩm nào" });
+            return res.status(404).json({ message: "This consignment contains no products" });
         }
 
-        res.json(consignment);  // Trả về toàn bộ đối tượng đơn hàng
+        res.json(consignment);  // Return the complete consignment object
     } catch (err) {
-        console.error("Lỗi chi tiết:", {
+        console.error("Error details:", {
             message: err.message,
             stack: err.stack
         });
         res.status(500).json({
-            error: "Lỗi server khi lấy chi tiết đơn ký gửi",
+            error: "Server error while fetching consignment details",
             detail: err.message
         });
     }

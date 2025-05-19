@@ -24,6 +24,7 @@ function ProductSearchPage() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [showPrintConfirmation, setShowPrintConfirmation] = useState(false);
     const [notification, setNotification] = useState({
         show: false,
         message: '',
@@ -31,6 +32,8 @@ function ProductSearchPage() {
     });
     const [orderIdInput, setOrderIdInput] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [createdOrderId, setCreatedOrderId] = useState(null);
+    const [invoiceData, setInvoiceData] = useState(null);
     const searchRef = useRef(null);
     const navigate = useNavigate();
 
@@ -78,16 +81,15 @@ function ProductSearchPage() {
     };
 
     const handleSelectProduct = (product) => {
-        // Only allow adding products with "Received" status
         if (product.Status !== 'Received') {
-            showAlert('Chỉ có thể thêm sản phẩm có sẵn vào đơn hàng', 'warning');
+            showAlert('Only available products can be added to the order', 'warning');
             return;
         }
 
         if (!selectedProducts.some(p => p.ID === product.ID)) {
             const quantity = product.Consignment_quantity || 1;
             setSelectedProducts([...selectedProducts, {...product, quantity}]);
-            showAlert(`Đã thêm ${product.Product_name} vào đơn hàng`, 'success');
+            showAlert(`Added ${product.Product_name} to the order`, 'success');
             setSearchInput('');
             setShowSuggestions(false);
         }
@@ -96,7 +98,7 @@ function ProductSearchPage() {
     const handleRemoveProduct = (productId) => {
         const product = selectedProducts.find(p => p.ID === productId);
         setSelectedProducts(selectedProducts.filter(p => p.ID !== productId));
-        showAlert(`Đã xóa ${product.Product_name} khỏi đơn hàng`, 'warning');
+        showAlert(`Removed ${product.Product_name} from the order`, 'warning');
     };
 
     const handleCustomerInfoChange = (e) => {
@@ -105,18 +107,8 @@ function ProductSearchPage() {
     };
 
     const handleConfirmOrder = () => {
-        if (!customerInfo.name || !customerInfo.phone || !customerInfo.age) {
-            showAlert('Vui lòng nhập đầy đủ thông tin khách hàng (họ tên, số điện thoại, tuổi)', 'error');
-            return;
-        }
-
-        if (isNaN(customerInfo.age)) {
-            showAlert('Tuổi phải là số', 'error');
-            return;
-        }
-
         if (selectedProducts.length === 0) {
-            showAlert('Vui lòng chọn ít nhất một sản phẩm', 'error');
+            showAlert('Please select at least one product', 'error');
             return;
         }
 
@@ -136,7 +128,7 @@ function ProductSearchPage() {
                 name: customerInfo.name,
                 phone: customerInfo.phone,
                 address: customerInfo.address,
-                age: parseInt(customerInfo.age)
+                age: customerInfo.age ? parseInt(customerInfo.age) : null
             }
         };
 
@@ -146,11 +138,12 @@ function ProductSearchPage() {
             const orderId = response.orderId;
             
             if (!orderId) {
-                throw new Error("Server không trả về ID đơn hàng");
+                throw new Error("Server did not return order ID");
             }
 
+            setCreatedOrderId(orderId);
             showAlert(
-                `Tạo đơn hàng thành công! Mã đơn hàng: ${orderId}`,
+                `Order created successfully! Order ID: ${orderId}`,
                 'success',
                 5000
             );
@@ -160,29 +153,21 @@ function ProductSearchPage() {
             setSearchInput('');
             clearSearch();
 
-            try {
-                const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
-                if (invoice?.url) {
-                    setTimeout(() => {
-                        window.open(invoice.url, '_blank');
-                        showAlert('Đang mở hóa đơn trong tab mới...', 'info');
-                    }, 1000);
-                }
-            } catch (invoiceError) {
-                console.error('Lỗi khi lấy hóa đơn:', invoiceError);
-                showAlert(
-                    'Đơn hàng đã tạo nhưng không thể tải hóa đơn. Vui lòng thử lại sau.',
-                    'warning'
-                );
-            }
+            // Fetch invoice data
+            const invoice = await getInvoiceAPI(localStorage.getItem('token'), orderId);
+            setInvoiceData(invoice);
+            
+            // Show print confirmation dialog
+            setShowPrintConfirmation(true);
+            
         } catch (error) {
-            console.error('Chi tiết lỗi:', {
+            console.error('Error details:', {
                 message: error.message,
                 response: error.response?.data
             });
             
             showAlert(
-                `Lỗi khi tạo đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
+                `Order creation error: ${error.response?.data?.message || error.message || 'Please try again'}`,
                 'error'
             );
         } finally {
@@ -190,9 +175,106 @@ function ProductSearchPage() {
         }
     };
 
+    const handlePrintInvoice = () => {
+        setShowPrintConfirmation(false);
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Invoice #${createdOrderId}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        body { padding: 20px; }
+                        .no-print { display: none !important; }
+                        .print-only { display: block !important; }
+                    }
+                    .print-header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                        border-bottom: 2px solid #000;
+                        padding-bottom: 10px;
+                    }
+                    .customer-info {
+                        margin-bottom: 20px;
+                    }
+                    .table th, .table td {
+                        padding: 8px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="print-header">
+                        <h2>SALES INVOICE</h2>
+                        <p>Order ID: #${createdOrderId}</p>
+                        <p>Date: ${new Date().toLocaleDateString()}</p>
+                    </div>
+
+                    <div class="customer-info">
+                        <h4>Customer Information</h4>
+                        <p><strong>Name:</strong> ${customerInfo.name || 'Not provided'}</p>
+                        <p><strong>Phone:</strong> ${customerInfo.phone || 'Not provided'}</p>
+                        <p><strong>Address:</strong> ${customerInfo.address || 'Not provided'}</p>
+                        <p><strong>Age:</strong> ${customerInfo.age || 'Not provided'}</p>
+                    </div>
+
+                    <div class="order-details">
+                        <h4>Order Details</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Product</th>
+                                    <th>Unit Price</th>
+                                    <th>Quantity</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${selectedProducts.map((product, index) => `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${product.Product_name}</td>
+                                        <td>${parseFloat(getProductPrice(product)).toLocaleString()} VND</td>
+                                        <td>${product.quantity || 1}</td>
+                                        <td>${(parseFloat(getProductPrice(product)) * (product.quantity || 1)).toLocaleString()} VND</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="4" class="text-end">Total:</th>
+                                    <th>${calculateTotal().toLocaleString()} VND</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="text-center mt-4 no-print">
+                        <button class="btn btn-primary" onclick="window.print()">Print Invoice</button>
+                        <button class="btn btn-secondary ms-2" onclick="window.close()">Close</button>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
     const handleViewInvoice = async () => {
         if (!orderIdInput || isNaN(orderIdInput)) {
-            showAlert('Vui lòng nhập ID đơn hàng hợp lệ', 'error');
+            showAlert('Please enter a valid order ID', 'error');
             return;
         }
 
@@ -201,7 +283,7 @@ function ProductSearchPage() {
             navigate(`/admin/orders/${orderIdInput}`, { state: { invoice } });
         } catch (error) {
             showAlert(
-                `Không tìm thấy hóa đơn: ${error.response?.data?.message || error.message || 'Vui lòng thử lại'}`,
+                `Invoice not found: ${error.response?.data?.message || error.message || 'Please try again'}`,
                 'error'
             );
         }
@@ -214,13 +296,13 @@ function ProductSearchPage() {
     const getStatusBadge = (status) => {
         switch(status) {
             case 'Received':
-                return { class: 'bg-success', text: 'Có sẵn' };
+                return { class: 'bg-success', text: 'Available' };
             case 'Consigned':
-                return { class: 'bg-warning text-dark', text: 'Đang ký gửi' };
+                return { class: 'bg-warning text-dark', text: 'Consigned' };
             case 'Sold':
-                return { class: 'bg-secondary', text: 'Đã bán' };
+                return { class: 'bg-secondary', text: 'Sold' };
             default:
-                return { class: 'bg-secondary', text: 'Không xác định' };
+                return { class: 'bg-secondary', text: 'Unknown' };
         }
     };
 
@@ -270,7 +352,7 @@ function ProductSearchPage() {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header bg-primary text-white">
-                                <h5 className="modal-title">Xác nhận đơn hàng</h5>
+                                <h5 className="modal-title">Confirm Order</h5>
                                 <button 
                                     type="button" 
                                     className="btn-close" 
@@ -278,27 +360,27 @@ function ProductSearchPage() {
                                 ></button>
                             </div>
                             <div className="modal-body">
-                                <p>Bạn có chắc chắn muốn tạo đơn hàng này?</p>
+                                <p>Are you sure you want to create this order?</p>
                                 <div className="mb-3">
-                                    <strong>Khách hàng:</strong> {customerInfo.name}
+                                    <strong>Customer:</strong> {customerInfo.name || 'Not provided'}
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Số điện thoại:</strong> {customerInfo.phone}
+                                    <strong>Phone:</strong> {customerInfo.phone || 'Not provided'}
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Sản phẩm:</strong>
+                                    <strong>Products:</strong>
                                     <ul>
                                         {selectedProducts.map(product => (
                                             <li key={product.ID}>
                                                 {product.Product_name} - 
-                                                {parseFloat(getProductPrice(product)).toLocaleString()} đ × 
+                                                {parseFloat(getProductPrice(product)).toLocaleString()} VND × 
                                                 {product.quantity || 1}
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
                                 <div className="mb-3">
-                                    <strong>Tổng cộng:</strong> {calculateTotal().toLocaleString()} đ
+                                    <strong>Total:</strong> {calculateTotal().toLocaleString()} VND
                                 </div>
                             </div>
                             <div className="modal-footer">
@@ -308,7 +390,7 @@ function ProductSearchPage() {
                                     onClick={() => setShowConfirmation(false)}
                                     disabled={isSubmitting}
                                 >
-                                    Hủy bỏ
+                                    Cancel
                                 </button>
                                 <button 
                                     type="button" 
@@ -319,9 +401,45 @@ function ProductSearchPage() {
                                     {isSubmitting ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Đang xử lý...
+                                            Processing...
                                         </>
-                                    ) : 'Xác nhận'}
+                                    ) : 'Confirm'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPrintConfirmation && (
+                <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header bg-success text-white">
+                                <h5 className="modal-title">Print Invoice</h5>
+                                <button 
+                                    type="button" 
+                                    className="btn-close" 
+                                    onClick={() => setShowPrintConfirmation(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Do you want to print the invoice for order #${createdOrderId}?</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button 
+                                    type="button" 
+                                    className="btn btn-secondary" 
+                                    onClick={() => setShowPrintConfirmation(false)}
+                                >
+                                    Skip
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn btn-success" 
+                                    onClick={handlePrintInvoice}
+                                >
+                                    Print Invoice
                                 </button>
                             </div>
                         </div>
@@ -332,19 +450,19 @@ function ProductSearchPage() {
             <div className="container-fluid mt-3" style={{ marginLeft: '250px', padding: '20px' }}>
                 <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded shadow-sm">
                     <div className="container-fluid">
-                        <span className="navbar-brand">Quản lý đơn hàng</span>
+                        <span className="navbar-brand">Order Management</span>
                         <div className="d-flex">
                             <button 
                                 className="btn btn-outline-success me-2" 
                                 onClick={navigateToSoldOrders}
                             >
-                                Đơn hàng đã bán
+                                Sold Orders
                             </button>
                             <div className="input-group">
                                 <input
                                     type="number"
                                     className="form-control"
-                                    placeholder="Nhập ID đơn hàng"
+                                    placeholder="Enter order ID"
                                     value={orderIdInput}
                                     onChange={(e) => setOrderIdInput(e.target.value)}
                                 />
@@ -354,7 +472,7 @@ function ProductSearchPage() {
                                     onClick={handleViewInvoice}
                                     disabled={!orderIdInput || isSubmitting}
                                 >
-                                    Xem hóa đơn
+                                    View Invoice
                                 </button>
                             </div>
                         </div>
@@ -365,7 +483,7 @@ function ProductSearchPage() {
                     <div className="col-md-8">
                         <div className="card shadow mb-4">
                             <div className="card-header bg-primary text-white">
-                                <h4 className="mb-0">Tìm kiếm sản phẩm</h4>
+                                <h4 className="mb-0">Product Search</h4>
                             </div>
                             <div className="card-body">
                                 <div ref={searchRef} className="position-relative">
@@ -374,7 +492,7 @@ function ProductSearchPage() {
                                         className="form-control form-control-lg"
                                         value={searchInput}
                                         onChange={handleInputChange}
-                                        placeholder="Nhập tên sản phẩm..."
+                                        placeholder="Enter product name..."
                                         autoFocus
                                         onFocus={() => searchInput.trim().length > 0 && setShowSuggestions(true)}
                                     />
@@ -413,7 +531,7 @@ function ProductSearchPage() {
                                                                             {statusBadge.text}
                                                                         </span>
                                                                         <div>
-                                                                            {parseFloat(getProductPrice(product)).toLocaleString()} đ
+                                                                            {parseFloat(getProductPrice(product)).toLocaleString()} VND
                                                                         </div>
                                                                         
                                                                     </div>
@@ -424,7 +542,7 @@ function ProductSearchPage() {
                                                 </ul>
                                             ) : (
                                                 <div className="p-3 text-muted">
-                                                    Không tìm thấy sản phẩm phù hợp
+                                                    No matching products found
                                                 </div>
                                             )}
                                         </div>
@@ -437,20 +555,20 @@ function ProductSearchPage() {
                                     </div>
                                 )}
 
-                                {/* Bảng sản phẩm đã chọn */}
+                                {/* Selected products table */}
                                 {selectedProducts.length > 0 && (
                                     <div className="mt-4">
-                                        <h5>Sản phẩm đã chọn</h5>
+                                        <h5>Selected Products</h5>
                                         <div className="table-responsive">
                                             <table className="table table-bordered">
                                                 <thead className="table-info">
                                                     <tr>
-                                                        <th>STT</th>
-                                                        <th>Sản phẩm</th>
-                                                        <th>Giá</th>
-                                                        <th>Số lượng</th>
-                                                        <th>Thành tiền</th>
-                                                        <th>Thao tác</th>
+                                                        <th>#</th>
+                                                        <th>Product</th>
+                                                        <th>Price</th>
+                                                        <th>Quantity</th>
+                                                        <th>Amount</th>
+                                                        <th>Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -458,17 +576,17 @@ function ProductSearchPage() {
                                                         <tr key={product.ID}>
                                                             <td>{index + 1}</td>
                                                             <td>{product.Product_name}</td>
-                                                            <td>{parseFloat(getProductPrice(product)).toLocaleString()} đ</td>
+                                                            <td>{parseFloat(getProductPrice(product)).toLocaleString()} VND</td>
                                                             <td>{product.quantity || 1}</td>
                                                             <td>
-                                                                {(parseFloat(getProductPrice(product)) * (product.quantity || 1)).toLocaleString()} đ
+                                                                {(parseFloat(getProductPrice(product)) * (product.quantity || 1)).toLocaleString()} VND
                                                             </td>
                                                             <td>
                                                                 <button
                                                                     className="btn btn-sm btn-outline-danger"
                                                                     onClick={() => handleRemoveProduct(product.ID)}
                                                                 >
-                                                                    Xóa
+                                                                    Remove
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -476,8 +594,8 @@ function ProductSearchPage() {
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <th colSpan="4">Tổng cộng</th>
-                                                        <th colSpan="2">{calculateTotal().toLocaleString()} đ</th>
+                                                        <th colSpan="4">Total</th>
+                                                        <th colSpan="2">{calculateTotal().toLocaleString()} VND</th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -491,34 +609,32 @@ function ProductSearchPage() {
                     <div className="col-md-4">
                         <div className="card shadow sticky-top" style={{ top: '20px' }}>
                             <div className="card-header bg-info text-white">
-                                <h4 className="mb-0">Thông tin đơn hàng</h4>
+                                <h4 className="mb-0">Order Information</h4>
                             </div>
                             <div className="card-body">
-                                <h5>Thông tin khách hàng</h5>
+                                <h5>Customer Information</h5>
                                 <div className="mb-3">
-                                    <label className="form-label">Họ tên <span className="text-danger">*</span></label>
+                                    <label className="form-label">Full Name</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         name="name"
                                         value={customerInfo.name}
                                         onChange={handleCustomerInfoChange}
-                                        required
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Số điện thoại <span className="text-danger">*</span></label>
+                                    <label className="form-label">Phone Number</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         name="phone"
                                         value={customerInfo.phone}
                                         onChange={handleCustomerInfoChange}
-                                        required
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Tuổi <span className="text-danger">*</span></label>
+                                    <label className="form-label">Age</label>
                                     <input
                                         type="number"
                                         className="form-control"
@@ -527,11 +643,10 @@ function ProductSearchPage() {
                                         onChange={handleCustomerInfoChange}
                                         min="1"
                                         max="120"
-                                        required
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Địa chỉ</label>
+                                    <label className="form-label">Address</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -550,9 +665,9 @@ function ProductSearchPage() {
                                         {isSubmitting ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2"></span>
-                                                Đang xử lý...
+                                                Processing...
                                             </>
-                                        ) : 'Tạo đơn hàng'}
+                                        ) : 'Create Order'}
                                     </button>
                                     <button
                                         className="btn btn-outline-secondary"
@@ -560,10 +675,10 @@ function ProductSearchPage() {
                                         onClick={() => {
                                             setSelectedProducts([]);
                                             setCustomerInfo({ name: '', phone: '', address: '', age: '' });
-                                            showAlert('Đã xóa toàn bộ đơn hàng', 'info');
+                                            showAlert('Cleared all products from order', 'info');
                                         }}
                                     >
-                                        Xóa tất cả
+                                        Clear All
                                     </button>
                                 </div>
                             </div>

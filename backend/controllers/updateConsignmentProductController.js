@@ -13,7 +13,7 @@ const updateConsignmentProduct = async (req, res) => {
         // Validate IDs
         if (isNaN(productId) || isNaN(consignmentId) || productId <= 0 || consignmentId <= 0) {
             return res.status(400).json({ 
-                error: "ID không hợp lệ",
+                error: "Invalid ID",
                 details: {
                     productId: req.params.productId,
                     consignmentId: req.params.consignmentId
@@ -36,7 +36,7 @@ const updateConsignmentProduct = async (req, res) => {
         // Additional validation
         if (!updatedData.Product_name || !updatedData.Brand_name || !updatedData.Product_Type_Name) {
             return res.status(400).json({ 
-                error: "Thiếu thông tin bắt buộc: Tên sản phẩm, Thương hiệu hoặc Loại sản phẩm",
+                error: "Missing required information: Product name, Brand or Product type",
                 receivedData: req.body
             });
         }
@@ -46,7 +46,7 @@ const updateConsignmentProduct = async (req, res) => {
         
         return res.status(200).json({
             success: true,
-            message: "Cập nhật thành công",
+            message: "Update successful",
             data: result
         });
 
@@ -60,11 +60,11 @@ const updateConsignmentProduct = async (req, res) => {
         });
 
         // Differentiate between client and server errors
-        const statusCode = error.message.includes("Thiếu thông tin") || 
-                          error.message.includes("không tồn tại") ? 400 : 500;
+        const statusCode = error.message.includes("Missing information") || 
+                          error.message.includes("does not exist") ? 400 : 500;
 
         return res.status(statusCode).json({ 
-            error: error.message || "Lỗi server khi cập nhật sản phẩm",
+            error: error.message || "Server error while updating product",
             details: {
                 params: req.params,
                 body: req.body,

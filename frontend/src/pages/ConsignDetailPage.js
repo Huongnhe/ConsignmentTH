@@ -29,12 +29,11 @@ const ConsignmentDetailPage = () => {
 
     useEffect(() => {
         if (consignmentDetail) {
-            // Chuyển đổi dữ liệu từ Product_Image sang Image nếu cần
             const convertedData = {
                 ...consignmentDetail,
                 Products: consignmentDetail.Products?.map(product => ({
                     ...product,
-                    Image: product.Product_Image || product.Image || '' // Giữ lại cả 2 trường để tương thích
+                    Image: product.Product_Image || product.Image || ''
                 }))
             };
             setUpdatedConsignmentDetail(convertedData);
@@ -61,7 +60,6 @@ const ConsignmentDetailPage = () => {
             updatedProducts[index].ImageFile = file;
             updatedProducts[index].Product_Image = file.name; 
         } else {
-            // Thay đổi ở đây: set thành null thay vì chuỗi rỗng
             updatedProducts[index].Image = null;
             updatedProducts[index].ImageFile = null;
             updatedProducts[index].Product_Image = null;
@@ -81,7 +79,7 @@ const ConsignmentDetailPage = () => {
                 Original_price: Number(product.Original_Price),
                 Sale_price: Number(product.Sale_Price),
                 Quantity: Number(product.Quantity),
-                Product_Image: product.Product_Image || product.Image || '' // Chỉ lấy tên file
+                Product_Image: product.Product_Image || product.Image || ''
             };
 
             if (!updatedData.Product_name) {
@@ -129,7 +127,7 @@ const ConsignmentDetailPage = () => {
                             Original_price: Number(product.Original_Price),
                             Sale_price: Number(product.Sale_Price),
                             Quantity: Number(product.Quantity),
-                            Product_Image: product.Product_Image || product.Image || '' // Chỉ lấy tên file
+                            Product_Image: product.Product_Image || product.Image || ''
                         };
 
                         return updateConsignment(

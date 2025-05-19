@@ -101,7 +101,7 @@ const CreateConsign = () => {
     };
 
     setAddedProducts([...addedProducts, newProduct]);
-    handleClearForm(); // Xóa form sau khi thêm sản phẩm
+    handleClearForm(); 
   };
 
   const handleRemoveProduct = (index) => {
@@ -329,7 +329,7 @@ const CreateConsign = () => {
                   <button
                     type="button"
                     className="btn px-4 py-2 me-2"
-                    onClick={handleClearForm} // Nút xóa dữ liệu form
+                    onClick={handleClearForm} 
                     style={{
                       backgroundColor: "#fecaca",
                       borderColor: "#f87171",
@@ -392,7 +392,7 @@ const CreateConsign = () => {
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-danger"
-                    onClick={() => setAddedProducts([])} // Xóa toàn bộ sản phẩm đã thêm
+                    onClick={() => setAddedProducts([])}
                   >
                     <i className="bi bi-trash me-1"></i>Clear All
                   </button>

@@ -12,21 +12,21 @@ app.use(cors({
 
 const verifyToken = (req, res, next) => {
     const token = req.header("Authorization")?.split(" ")[1];
-    console.log("Token nhận được từ request:", req.header("Authorization"));
-    console.log("Tất cả headers từ request:", req.headers);
+    console.log("Token received from request:", req.header("Authorization"));
+    console.log("All headers from request:", req.headers);
     console.log("Authorization header:", req.headers.authorization);
 
-    if (!token) return res.status(401).json({ error: "Không có token" });
+    if (!token) return res.status(401).json({ error: "No token provided" });
 
     try {
         const decoded = jwt.verify(token, process.env["SECRET_KEY"]);
         console.log("SECRET_KEY:", process.env["SECRET_KEY"]);
-        console.log("Token nhận được từ request:", req.header("Authorization"));
+        console.log("Token received from request:", req.header("Authorization"));
         req.user = decoded;
 
         next();
     } catch (error) {
-        res.status(401).json({ error: "Token không hợp lệ" });
+        res.status(401).json({ error: "Invalid token" });
     }
 };
 
@@ -34,7 +34,7 @@ const authenticateUser = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Không có token xác thực" });
+        return res.status(401).json({ error: "No authentication token" });
     }
 
     const token = authHeader.split(" ")[1];
@@ -43,13 +43,9 @@ const authenticateUser = (req, res, next) => {
         const decoded = jwt.verify(token, process.env["SECRET_KEY"]); 
         req.user = decoded;
         next();
-
     } catch (error) {
-        return res.status(403).json({ error: "Token không hợp lệ" });
+        return res.status(403).json({ error: "Invalid token" });
     }
-
-
 };
-
 
 module.exports = verifyToken, authenticateUser;

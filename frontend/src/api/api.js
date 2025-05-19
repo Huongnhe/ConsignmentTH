@@ -2,26 +2,25 @@ import axios from "axios";
 
 const API_URL = "http://localhost:8000/auth";
 
-
-// Đăng nhập người dùng
+// User login
 export const loginUser = async (email, password, account) => {
     try {
-        const response = await axios.post(`${API_URL}/login`, { email, password ,account});
-        console.log("Phản hồi từ API:", response.data);
+        const response = await axios.post(`${API_URL}/login`, { email, password, account });
+        console.log("API response:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi đăng nhập:", error.response?.data || error.message);
+        console.error("Login error:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Đăng ký người dùng
+// User registration
 export const registerUser = async (userData) => {
     try {
         const response = await axios.post(`${API_URL}/register`, userData);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi đăng ký:", error);
+        console.error("Registration error:", error);
         throw error;
     }
 };
@@ -57,33 +56,33 @@ export const registerWithOTPStep2API = async (username, email, password, otp) =>
                 try {
                     return data ? JSON.parse(data) : {}; 
                 } catch (e) {
-                    return { message: "Đăng ký thành công" }; 
+                    return { message: "Registration successful" }; 
                 }
             }]
         });
 
-        console.log("Full server response:", response); // Debug toàn bộ response
+        console.log("Full server response:", response); // Debug entire response
 
-        // Kiểm tra response.data tồn tại
+        // Check if response.data exists
         if (!response.data) {
             console.warn("Server returned empty response, creating default success response");
             return { 
                 success: true, 
-                message: "Đăng ký thành công",
+                message: "Registration successful",
                 user: { username, email },
                 token: "default-token-placeholder" 
             };
         }
 
-        // Kiểm tra các trường bắt buộc
+        // Check required fields
         if (response.data.success === false) {
-            throw new Error(response.data.message || "Xác thực thất bại");
+            throw new Error(response.data.message || "Verification failed");
         }
 
-        // Tạo object mặc định nếu thiếu các trường quan trọng
+        // Create default object if important fields are missing
         const result = {
             success: true,
-            message: response.data.message || "Đăng ký thành công",
+            message: response.data.message || "Registration successful",
             token: response.data.token || "default-token-placeholder",
             user: response.data.user || { username, email }
         };
@@ -97,7 +96,7 @@ export const registerWithOTPStep2API = async (username, email, password, otp) =>
             config: error.config
         });
         
-        // Tạo error object chuẩn
+        // Create standard error object
         const errObj = {
             message: error.response?.data?.message || error.message,
             code: error.response?.status || 500,
@@ -108,7 +107,7 @@ export const registerWithOTPStep2API = async (username, email, password, otp) =>
     }
 };
 
-// Lấy danh sách sản phẩm của người dùng
+// Get user's product list
 export const getUserProducts = async (token) => {
     try {
         const response = await axios.post(`${API_URL}/consigns`, {}, {
@@ -116,12 +115,12 @@ export const getUserProducts = async (token) => {
         });
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi lấy danh sách sản phẩm:", error.response?.data || error.message);
+        console.error("Error getting product list:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Lấy chi tiết sản phẩm của người dùng
+// Get user's product details
 export const getProductDetails = async (productId, token) => {
     try {
         const response = await axios.post(`${API_URL}/consigns/${productId}`, {}, {
@@ -129,12 +128,12 @@ export const getProductDetails = async (productId, token) => {
         });
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi lấy chi tiết sản phẩm:", error.response?.data || error.message);
+        console.error("Error getting product details:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Tạo đơn ký gửi
+// Create consignment
 export const createConsignAPI = async (token, consignmentData) => {
     try {
         const response = await axios.post(`${API_URL}/CreateConsign`, consignmentData, {
@@ -144,12 +143,12 @@ export const createConsignAPI = async (token, consignmentData) => {
         });
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi tạo đơn ký gửi:", error.response?.data);
-        throw error.response?.data || { error: "Lỗi khi tạo đơn ký gửi" };
+        console.error("Error creating consignment:", error.response?.data);
+        throw error.response?.data || { error: "Error creating consignment" };
     }
 };
 
-// Lấy chi tiết phiếu ký gửi
+// Get consignment details
 export const fetchConsignmentDetailAPI = async (token, consignmentId) => {
     try {
         const response = await axios.post(
@@ -159,11 +158,11 @@ export const fetchConsignmentDetailAPI = async (token, consignmentId) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Dữ liệu từ API (full response):", response);
-        console.log("Dữ liệu từ API (chỉ data):", response.data);
+        console.log("API data (full response):", response);
+        console.log("API data (only data):", response.data);
         return response.data;
     } catch (err) {
-        console.error("Lỗi chi tiết:", {
+        console.error("Error details:", {
             message: err.message,
             response: err.response,
             config: err.config
@@ -172,7 +171,7 @@ export const fetchConsignmentDetailAPI = async (token, consignmentId) => {
     }
 };
 
-// Lấy tất cả phiếu ký gửi (admin)
+// Get all consignment tickets (admin)
 export const getAllConsignmentTicketsAPI = async (token) => {
     try {
         const response = await axios.post(
@@ -182,15 +181,15 @@ export const getAllConsignmentTicketsAPI = async (token) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Dữ liệu nhận được từ API trả về mảng danh sách sản phẩm:", response.data);
+        console.log("API data received returning product list array:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi lấy tất cả phiếu ký gửi:", error.response?.data || error.message);
+        console.error("Error getting all consignment tickets:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Lấy phiếu ký gửi chờ duyệt (admin)
+// Get pending consignments (admin)
 export const getPendingConsignmentsAPI = async (token) => {
     try {
         const response = await axios.post(
@@ -200,15 +199,15 @@ export const getPendingConsignmentsAPI = async (token) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Phiếu ký gửi PENDING:", response.data);
+        console.log("PENDING consignments:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi lấy phiếu ký gửi chờ duyệt:", error.response?.data || error.message);
+        console.error("Error getting pending consignments:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Lấy phiếu ký gửi đã duyệt hoặc từ chối (admin)
+// Get reviewed/rejected consignments (admin)
 export const getReviewedConsignmentsAPI = async (token) => {
     try {
         const response = await axios.post(
@@ -218,15 +217,15 @@ export const getReviewedConsignmentsAPI = async (token) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Phiếu ký gửi đã duyệt hoặc từ chối:", response.data);
+        console.log("Reviewed/rejected consignments:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi lấy phiếu đã được duyệt/từ chối:", error.response?.data || error.message);
+        console.error("Error getting reviewed/rejected consignments:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Duyệt phiếu ký gửi (admin)
+// Approve consignment ticket (admin)
 export const approveConsignmentTicketAPI = async (token, ticketID) => {
     try {
         const response = await axios.put(
@@ -236,15 +235,15 @@ export const approveConsignmentTicketAPI = async (token, ticketID) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Dữ liệu trả về từ API khi duyệt phiếu ký gửi:", response.data);
+        console.log("API response when approving consignment:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi duyệt phiếu ký gửi:", error.response?.data || error.message);
+        console.error("Error approving consignment:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Từ chối phiếu ký gửi (admin)
+// Reject consignment ticket (admin)
 export const rejectConsignmentTicketAPI = async (token, ticketID) => {
     try {
         const response = await axios.put(
@@ -254,21 +253,20 @@ export const rejectConsignmentTicketAPI = async (token, ticketID) => {
                 headers: { Authorization: `Bearer ${token}` },
             }
         );
-        console.log("Dữ liệu trả về từ API khi từ chối phiếu ký gửi:", response.data);
+        console.log("API response when rejecting consignment:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Lỗi khi từ chối phiếu ký gửi:", error.response?.data || error.message);
+        console.error("Error rejecting consignment:", error.response?.data || error.message);
         throw error;
     }
 };
 
-// Xóa sản phẩm trong đơn ký gửi
+// Delete product in consignment
 export const deleteProductInConsignmentAPI = async (token, consignmentId, productId) => {
     try {
         const response = await axios.post(
             `${API_URL}/consignments/${consignmentId}/products/${productId}`,
             {},
-            
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -276,22 +274,20 @@ export const deleteProductInConsignmentAPI = async (token, consignmentId, produc
             }
         );
         
-        console.log("Phản hồi từ API khi xóa sản phẩm:", response.data);
-        console.log("Token dùng để gọi API:", token);
+        console.log("API response when deleting product:", response.data);
+        console.log("Token used for API call:", token);
         return response.data;
-        
-
     } catch (error) {
-        console.error("Lỗi khi xóa sản phẩm trong đơn:", error.response?.data || error.message);
+        console.error("Error deleting product in consignment:", error.response?.data || error.message);
         throw error;
     }
 };
+
 export const deleteConsignmentAPI = async (token, consignmentId) => {
     try {
         const response = await axios.post(
             `${API_URL}/consignments/${consignmentId}`,
             {},
-            
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -299,13 +295,11 @@ export const deleteConsignmentAPI = async (token, consignmentId) => {
             }
         );
         
-        console.log("Phản hồi từ API khi xóa sản phẩm:", response.data);
-        console.log("Token dùng để gọi API:", token);
+        console.log("API response when deleting consignment:", response.data);
+        console.log("Token used for API call:", token);
         return response.data;
-        
-
     } catch (error) {
-        console.error("Lỗi khi xóa đơn:", error.response?.data || error.message);
+        console.error("Error deleting consignment:", error.response?.data || error.message);
         throw error;
     }
 };
@@ -322,12 +316,11 @@ export const updateConsignmentAPI = async (token, consignmentId, productId, upda
             }
         );
         
-        console.log("Phản hồi từ API khi sửa sản phẩm:", response.data);
-        console.log("Token dùng để gọi API:", token);
+        console.log("API response when updating product:", response.data);
+        console.log("Token used for API call:", token);
         return response.data;
-    
     } catch (error) {
-        console.error("Chi tiết lỗi API:", {
+        console.error("API error details:", {
             url: error.config?.url,
             status: error.response?.status,
             data: error.response?.data,
@@ -378,11 +371,11 @@ export const createOrdersAPI = async (token, orderData) => {
             }
         );
         
-        console.log("Phản hồi từ API khi thêm đơn hàng:", response.data);
+        console.log("API response when creating order:", response.data);
         return response.data;
     } catch (error) {
         const errorMsg = error.response?.data?.message || error.message;
-        console.error("Lỗi khi thêm đơn hàng:", errorMsg);
+        console.error("Error creating order:", errorMsg);
         throw new Error(errorMsg);
     }
 };

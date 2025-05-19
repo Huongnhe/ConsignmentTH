@@ -11,14 +11,14 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Kiểm tra kết nối
+// Test the connection
 (async () => {
     try {
         const connection = await pool.getConnection();
-        console.log("Kết nối MySQL thành công!");
+        console.log("Successfully connected to MySQL!");
         connection.release();
     } catch (err) {
-        console.error("Lỗi kết nối MySQL:", err);
+        console.error("MySQL connection error:", err);
         process.exit(1);
     }
 })();

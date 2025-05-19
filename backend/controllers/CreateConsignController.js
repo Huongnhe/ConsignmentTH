@@ -4,18 +4,18 @@ const createConsignController = async (req, res) => {
     const userId = req.user?.id;
     const productList = req.body.productList;
     if (!userId) {
-        return res.status(401).json({ error: "Bạn phải đăng nhập để thực hiện thao tác này" });
+        return res.status(401).json({ error: "You must be logged in to perform this action" });
     }
     
-    // Kiểm tra đầu vào là mảng và có ít nhất một sản phẩm
+    // Check if input is an array and has at least one product
     if (!Array.isArray(productList) || productList.length === 0) {
-        return res.status(400).json({ error: "Danh sách sản phẩm không hợp lệ hoặc trống" });
+        return res.status(400).json({ error: "Invalid or empty product list" });
     }
 
-    // Kiểm tra từng sản phẩm trong danh sách có đủ thông tin
+    // Check if each product in the list has required information
     const invalidItem = productList.find(p => !p.Brand_name || !p.Product_name || !p.Product_type_name);
     if (invalidItem) {
-        return res.status(400).json({ error: "Một hoặc nhiều sản phẩm thiếu thông tin bắt buộc" });
+        return res.status(400).json({ error: "One or more products are missing required information" });
     }
 
     try {
@@ -23,13 +23,13 @@ const createConsignController = async (req, res) => {
         res.status(201).json({
             message: result.message,
             ticketId: result.ticketId,
-            productList : result.productList
+            productList: result.productList
         });
     } catch (error) {
-        console.error("Lỗi khi tạo đơn ký gửi:", error);
+        console.error("Error creating consignment:", error);
         res.status(500).json({
-            error: "Lỗi server khi tạo đơn ký gửi",
-            message: error.message || "Không có thông tin chi tiết"
+            error: "Server error while creating consignment",
+            message: error.message || "No detailed information"
         });
     }
 };
