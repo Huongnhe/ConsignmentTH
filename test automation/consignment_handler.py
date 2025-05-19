@@ -13,26 +13,26 @@ class ConsignmentHandler:
         self.actions = ActionChains(self.driver)
     
     def test_create_consignment(self, consignment_case):
-        print(f"\n=== Bắt đầu test case: {consignment_case['case_name']} ===")
+        print(f"\n=== Starting test case: {consignment_case['case_name']} ===")
         try:
             self.driver.get("http://localhost:3000/CreateConsign")
             sleep(3)
             
-            # Kiểm tra xem có ở đúng trang CreateConsign không
+            # Check if on correct CreateConsign page
             current_url = self.driver.current_url
             if "CreateConsign" not in current_url:
-                print(f"-> [VALIDATE] KHÔNG ở trang CreateConsign, đang ở: {current_url}")
+                print(f"-> [VALIDATE] NOT on CreateConsign page, currently at: {current_url}")
                 return False
             
-            # Kiểm tra tiêu đề trang
+            # Check page title
             try:
                 self.wait.until(EC.presence_of_element_located(
                     (By.XPATH, "//h3[contains(., 'New Consignment Request')]")))
             except TimeoutException:
-                print("-> [VALIDATE] Không tìm thấy tiêu đề trang CreateConsign")
+                print("-> [VALIDATE] CreateConsign page title not found")
                 return False
             
-            # Điền thông tin sản phẩm
+            # Fill product information
             try:
                 product_name = self.wait.until(EC.presence_of_element_located((By.NAME, "Product_name")))
                 product_name.clear()
@@ -69,18 +69,18 @@ class ConsignmentHandler:
                 sleep(2)
 
             except NoSuchElementException as e:
-                print(f"-> [VALIDATE] Không tìm thấy trường nhập liệu: {str(e)}")
+                print(f"-> [VALIDATE] Input field not found: {str(e)}")
                 return False
             
-            # Upload ảnh
+            # Upload image
             image_path = consignment_case["image_path"]
             if not os.path.exists(image_path):
                 from PIL import Image
                 img = Image.new('RGB', (100, 100), color='red')
                 img.save(image_path)
-                print(f"-> [INFO] Đã tạo file ảnh mẫu tại: {image_path}")
+                print(f"-> [INFO] Created sample image file at: {image_path}")
                 
-            print(f"-> [INFO] Đang upload ảnh từ: {image_path}")
+            print(f"-> [INFO] Uploading image from: {image_path}")
             try:
                 image_input = self.driver.find_element(By.XPATH, "//input[@type='file']")
                 self.driver.execute_script("arguments[0].style.display = 'block';", image_input)
@@ -91,34 +91,34 @@ class ConsignmentHandler:
                     self.wait.until(EC.presence_of_element_located(
                         (By.XPATH, "//img[contains(@src, 'blob:') or contains(@src, 'data:image')]")))
                     sleep(2)
-                    print("-> [INFO] Upload ảnh thành công")
+                    print("-> [INFO] Image uploaded successfully")
                 except TimeoutException:
-                    print("-> [VALIDATE] Không xác nhận được ảnh đã upload")
+                    print("-> [VALIDATE] Could not confirm image upload")
             except NoSuchElementException:
-                print("-> [VALIDATE] Không tìm thấy input upload ảnh")
+                print("-> [VALIDATE] Image upload input not found")
                 return False
             
-            # Thêm sản phẩm
+            # Add product
             try:
                 add_button = self.wait.until(EC.element_to_be_clickable(
                     (By.XPATH, "//button[contains(., 'Add Product')]")))
                 add_button.click()
                 sleep(2)
                 
-                # Kiểm tra sản phẩm đã được thêm
+                # Check if product was added
                 try:
                     product_table = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "tbody")))
                     rows = product_table.find_elements(By.TAG_NAME, "tr")
                     if len(rows) > 0:
-                        print("-> [INFO] Đã thêm sản phẩm vào danh sách")
+                        print("-> [INFO] Product added to list")
                     else:
-                        print("-> [VALIDATE] Không thêm được sản phẩm vào danh sách")
+                        print("-> [VALIDATE] Failed to add product to list")
                         return False
                 except TimeoutException:
-                    print("-> [VALIDATE] Không tìm thấy bảng sản phẩm")
+                    print("-> [VALIDATE] Product table not found")
                     return False
             except Exception as e:
-                print(f"-> [VALIDATE] Lỗi khi thêm sản phẩm: {str(e)}")
+                print(f"-> [VALIDATE] Error adding product: {str(e)}")
                 return False
             
             # Submit consignment
@@ -128,12 +128,12 @@ class ConsignmentHandler:
                 submit_button.click()
                 sleep(3)
                 
-                # Kiểm tra kết quả
+                # Check result
                 try:
-                    # Kiểm tra modal thành công
+                    # Check success modal
                     success_modal = self.wait.until(EC.presence_of_element_located(
                         (By.XPATH, "//div[contains(@class, 'modal-content')]")))
-                    print("-> [SUCCESS] Modal xác nhận thành công xuất hiện")
+                    print("-> [SUCCESS] Success confirmation modal appeared")
                     
                     ok_button = self.wait.until(EC.element_to_be_clickable(
                         (By.XPATH, "//button[contains(., 'OK')]")))
@@ -141,28 +141,28 @@ class ConsignmentHandler:
                     sleep(2)
                     
                     if "consigns" in self.driver.current_url:
-                        print("-> [SUCCESS] Đã chuyển về trang Consigns")
+                        print("-> [SUCCESS] Redirected to Consigns page")
                         return True
                     else:
-                        print("-> [VALIDATE] Không chuyển về trang Consigns sau khi thành công")
+                        print("-> [VALIDATE] Not redirected to Consigns page after success")
                         return False
                     
                 except TimeoutException:
-                    # Kiểm tra thông báo lỗi
+                    # Check error messages
                     error_elements = self.driver.find_elements(By.XPATH, 
                         "//div[contains(@class, 'error') or contains(@class, 'invalid') or contains(@class, 'alert-danger')]")
                     if error_elements:
                         for error in error_elements:
                             print(f"-> [VALIDATE ERROR] {error.text}")
                     else:
-                        print("-> [VALIDATE] Không có thông báo lỗi cụ thể")
+                        print("-> [VALIDATE] No specific error message")
                     
                     return False
                 
             except Exception as e:
-                print(f"-> [VALIDATE] Lỗi khi submit consignment: {str(e)}")
+                print(f"-> [VALIDATE] Error submitting consignment: {str(e)}")
                 return False
             
         except Exception as e:
-            print(f"-> [SYSTEM ERROR] Lỗi hệ thống khi tạo consignment: {str(e)}")
+            print(f"-> [SYSTEM ERROR] System error creating consignment: {str(e)}")
             return False

@@ -9,7 +9,7 @@ from time import sleep
 
 class ConsignmentTest:
     def __init__(self):
-        # Khởi tạo kết nối database
+        # Initialize database connection
         try:
             self.db = mysql.connector.connect(
                 host="localhost",
@@ -18,21 +18,21 @@ class ConsignmentTest:
                 database="ConsignmentTH"
             )
             self.cursor = self.db.cursor()
-            print("[SYSTEM] Kết nối database thành công")
+            print("[SYSTEM] Database connection established successfully")
         except Exception as e:
-            print(f"[SYSTEM ERROR] Lỗi kết nối database: {str(e)}")
+            print(f"[SYSTEM ERROR] Database connection error: {str(e)}")
             self.db = None
             self.cursor = None
         
-        # Khởi tạo WebDriver chung
+        # Initialize WebDriver
         try:
             self.driver = webdriver.Chrome()
-            print("[SYSTEM] Khởi tạo WebDriver thành công")
+            print("[SYSTEM] WebDriver initialized successfully")
         except Exception as e:
-            print(f"[SYSTEM ERROR] Lỗi khởi tạo WebDriver: {str(e)}")
+            print(f"[SYSTEM ERROR] WebDriver initialization error: {str(e)}")
             self.driver = None
         
-        # Khởi tạo các handler với driver chung
+        # Initialize handlers with shared driver
         if self.driver:
             self.login_handler = LoginHandler(self.driver)
             self.consignment_handler = ConsignmentHandler(self.driver)
@@ -44,27 +44,27 @@ class ConsignmentTest:
             self.order_handler = None
             self.registration_handler = None
         
-        # Danh sách accounts
+        # Accounts list
         self.accounts = [
             {
                 "email": "wrong@gmail.com",
                 "password": "wrongpass",
-                "description": "User sai"
+                "description": "Incorrect user"
             },
             {
                 "email": "",
                 "password": "wrongpass",
-                "description": "Email empty"
+                "description": "Empty email"
             },
             {
                 "email": "cus@gmail.com",
                 "password": "",
-                "description": "Password empty"
+                "description": "Empty password"
             },
             {
                 "email": "cus@gmail.com",
                 "password": "12345",
-                "description": "User đúng"
+                "description": "Correct user"
             },
             {
                 "email": "admin@gmail.com", 
@@ -73,20 +73,20 @@ class ConsignmentTest:
             }
         ]
         
-        # Danh sách test cases
+        # Test cases list
         self.consignment_cases = [
             {
-                "case_name": "Case 1 - Đầy đủ thông tin",
+                "case_name": "Case 1 - Complete information",
                 "product_name": "Nike Air Force 1",
                 "brand": "Nike",
                 "product_type": "Shoes",
                 "original_price": "1000000",
                 "sale_price": "1800000",
                 "quantity": "1",
-                "image_path": os.path.abspath("test_images/hình ảnh.png")
+                "image_path": os.path.abspath("test_images/sample_image.png")
             },
             {
-                "case_name": "Case 2 - Thiếu tên sản phẩm",
+                "case_name": "Case 2 - Missing product name",
                 "product_name": "",
                 "brand": "Nike",
                 "product_type": "Shoes",
@@ -99,15 +99,15 @@ class ConsignmentTest:
 
         self.order_cases = [
             {
-                "case_name": "Case 1 - Thêm đơn hàng hợp lệ",
+                "case_name": "Case 1 - Add valid order",
                 "product_name": "Adidas Ultraboost",
-                "customer_name": "Nguyễn Văn A",
+                "customer_name": "Nguyen Van A",
                 "customer_phone": "0987654321",
                 "customer_age": "30",
                 "should_print": False 
             },
             {
-                "case_name": "Case 2 - Thêm đơn hàng không hợp lệ",
+                "case_name": "Case 2 - Add invalid order",
                 "product_name": "Nike Air Force 1",
                 "customer_name": "",
                 "customer_phone": "",
@@ -117,13 +117,13 @@ class ConsignmentTest:
         ]
 
         self.search_cases = [
-            {"order_id": 6, "description": "Đơn hàng hợp lệ"},
-            {"order_id": 9999, "description": "Đơn hàng không tồn tại"}
+            {"order_id": 6, "description": "Valid order"},
+            {"order_id": 9999, "description": "Non-existent order"}
         ]
         
         self.registration_test_cases = [
             # {
-            #     "case_name": "Xác thực OTP sai",
+            #     "case_name": "Incorrect OTP verification",
             #     "username": "testuser",
             #     "email": "khanhhhadz@gmail.com",
             #     "password": "Valid@123",
@@ -131,39 +131,39 @@ class ConsignmentTest:
             #     "email_password": "uqljpuvwdcclunua",
             #     "otp": "999999",
             #     "expected_result": False,
-            #     "description": "Kiểm tra hệ thống báo lỗi khi nhập OTP sai"
+            #     "description": "Check system error when entering wrong OTP"
             # },
             {
-                "case_name": "Đăng ký thành công với email hợp lệ",
+                "case_name": "Successful registration with valid email",
                 "username": "khanh",
-                "email": "khanhhhadz@gmail.com",
+                "email": "dthuhuong133@gmail.com",
                 "password": "123",
                 "email_address": "dthuhuong133@gmail.com",  
-                "email_password": "uqljpuvwdcclunua", 
+                "email_password": "bdscqmbivcaianhk", 
                 "expected_result": True,
-                "description": "Kiểm tra đăng ký thành công với email hợp lệ và xác thực OTP thực"
+                "description": "Check successful registration with valid email and real OTP verification"
             },
             {
-                "case_name": "Đăng ký với email không hợp lệ",
+                "case_name": "Registration with invalid email",
                 "username": "testuser_invalid",
                 "email": "invalid_email",
                 "password": "Valid@123",
                 "expected_result": False,
                 "expected_error": "Invalid email format",
-                "description": "Kiểm tra hệ thống báo lỗi khi email không hợp lệ"
+                "description": "Check system error when email is invalid"
             },
             {
-                "case_name": "Đăng ký với email đã tồn tại",
+                "case_name": "Registration with existing email",
                 "username": "testuser_exist",
                 "email": "admin@gmail.com",
                 "password": "Exist@123",
                 "expected_result": False,
                 "expected_error": "already exists",
-                "description": "Kiểm tra hệ thống báo lỗi khi email đã tồn tại"
+                "description": "Check system error when email already exists"
             }
         ]
 
-        # Thống kê kết quả test
+        # Test results statistics
         self.test_results = {
             'registration': {'success': 0, 'fail': 0},
             'login': {'success': 0, 'fail': 0},
@@ -172,33 +172,33 @@ class ConsignmentTest:
             'search': {'success': 0, 'fail': 0}
         }
         
-        # Tạo thư mục test_images nếu chưa tồn tại
+        # Create test_images directory if not exists
         os.makedirs("test_images", exist_ok=True)
 
     def run_test_cases(self):
         if not self.driver:
-            print("[SYSTEM ERROR] Không thể chạy test do lỗi WebDriver")
+            print("[SYSTEM ERROR] Cannot run tests due to WebDriver error")
             return
         
-        # Chạy các test case đăng ký
-        print("\n=== Chạy các kiểm thử đăng ký ===")
+        # Run registration test cases
+        print("\n=== Running registration tests ===")
         for case in self.registration_test_cases:
-            print(f"\n=== Bắt đầu test case: {case['case_name']} ===")
+            print(f"\n=== Starting test case: {case['case_name']} ===")
             try:
                 result = self.registration_handler.run_registration_test_case(case)
                 if result:
                     self.test_results['registration']['success'] += 1
                 else:
                     self.test_results['registration']['fail'] += 1
-                print(f"-> [KẾT QUẢ] {'Thành công' if result else 'Thất bại'}")
+                print(f"-> [RESULT] {'Success' if result else 'Failure'}")
             except Exception as e:
-                print(f"-> [LỖI HỆ THỐNG] Lỗi khi chạy test case: {str(e)}")
+                print(f"-> [SYSTEM ERROR] Error running test case: {str(e)}")
                 self.test_results['registration']['fail'] += 1
 
         for account in self.accounts:
-            print(f"\n=== Bắt đầu test với account: {account['email']} ({account['description']}) ===")
+            print(f"\n=== Starting test with account: {account['email']} ({account['description']}) ===")
             
-            # Thực hiện login
+            # Perform login
             login_success = False
             try:
                 sleep(2)
@@ -208,14 +208,14 @@ class ConsignmentTest:
                 else:
                     self.test_results['login']['fail'] += 1
             except Exception as e:
-                print(f"[SYSTEM ERROR] Lỗi khi đăng nhập: {str(e)}")
+                print(f"[SYSTEM ERROR] Login error: {str(e)}")
                 self.test_results['login']['fail'] += 1
             
             if not login_success:
-                print(f"-> [VALIDATE] Đăng nhập thất bại, chuyển sang account tiếp theo")
+                print(f"-> [VALIDATE] Login failed, moving to next account")
                 continue
             
-            # Kiểm tra role user
+            # Check user role
             email = account["email"]
             role = None
             if self.db and self.cursor:
@@ -224,77 +224,77 @@ class ConsignmentTest:
                     result = self.cursor.fetchone()
                     if result:
                         role = result[0]
-                        print(f"-> [INFO] Role của user là: {role}")
+                        print(f"-> [INFO] User role is: {role}")
                     else:
-                        print("-> [VALIDATE] Không tìm thấy user trong database")
+                        print("-> [VALIDATE] User not found in database")
                 except Exception as e:
-                    print(f"-> [SYSTEM ERROR] Lỗi khi kiểm tra role: {str(e)}")
+                    print(f"-> [SYSTEM ERROR] Error checking role: {str(e)}")
             
             if role:
                 if role.lower() == "customer":
-                    # Chạy các case create consignment
+                    # Run create consignment cases
                     for consignment_case in self.consignment_cases:
                         try:
-                            print(f"\n=== Thực hiện test case: {consignment_case['case_name']} ===")
+                            print(f"\n=== Running test case: {consignment_case['case_name']} ===")
                             create_success = self.consignment_handler.test_create_consignment(consignment_case)
                             if create_success:
                                 self.test_results['consignment']['success'] += 1
                             else:
                                 self.test_results['consignment']['fail'] += 1
-                            print(f"-> [RESULT] {'Thành công' if create_success else 'Thất bại'}")
+                            print(f"-> [RESULT] {'Success' if create_success else 'Failure'}")
                         except Exception as e:
-                            print(f"-> [SYSTEM ERROR] Lỗi khi chạy test case: {str(e)}")
+                            print(f"-> [SYSTEM ERROR] Error running test case: {str(e)}")
                             self.test_results['consignment']['fail'] += 1
                 
                 elif role.lower() == "manager":
-                    # Chạy các case thêm đơn hàng
+                    # Run add order cases
                     for order_case in self.order_cases:
                         try:
-                            print(f"\n=== Thực hiện test case: {order_case['case_name']} ===")
+                            print(f"\n=== Running test case: {order_case['case_name']} ===")
                             add_success = self.order_handler.test_add_order(order_case)
                             if add_success:
                                 self.test_results['order']['success'] += 1
                             else:
                                 self.test_results['order']['fail'] += 1
-                            print(f"-> [RESULT] {'Thành công' if add_success else 'Thất bại'}")
+                            print(f"-> [RESULT] {'Success' if add_success else 'Failure'}")
                         except Exception as e:
-                            print(f"-> [SYSTEM ERROR] Lỗi khi chạy test case: {str(e)}")
+                            print(f"-> [SYSTEM ERROR] Error running test case: {str(e)}")
                             self.test_results['order']['fail'] += 1
                     
-                    # Chạy các case tìm kiếm đơn hàng
+                    # Run order search cases
                     for search_case in self.search_cases:
                         try:
-                            print(f"\n=== Thực hiện tìm kiếm đơn hàng #{search_case['order_id']} ({search_case['description']}) ===")
+                            print(f"\n=== Searching for order #{search_case['order_id']} ({search_case['description']}) ===")
                             search_success = self.order_handler.test_search_order(search_case["order_id"])
                             if search_success:
                                 self.test_results['search']['success'] += 1
                             else:
                                 self.test_results['search']['fail'] += 1
-                            print(f"-> [RESULT] {'Thành công' if search_success else 'Thất bại'}")
+                            print(f"-> [RESULT] {'Success' if search_success else 'Failure'}")
                         except Exception as e:
-                            print(f"-> [SYSTEM ERROR] Lỗi khi tìm kiếm đơn hàng: {str(e)}")
+                            print(f"-> [SYSTEM ERROR] Error searching for order: {str(e)}")
                             self.test_results['search']['fail'] += 1
                 else:
-                    print(f"-> [VALIDATE] Role '{role}' không được hỗ trợ")
+                    print(f"-> [VALIDATE] Role '{role}' not supported")
             
-            # Logout sau khi test xong
+            # Logout after testing
             if login_success:
                 try:
                     self.login_handler.logout()
                     sleep(2)
                 except Exception as e:
-                    print(f"-> [SYSTEM ERROR] Lỗi khi logout: {str(e)}")
+                    print(f"-> [SYSTEM ERROR] Logout error: {str(e)}")
 
-        # Hiển thị tổng kết kết quả test
+        # Show test summary
         self.show_test_summary()
 
     def show_test_summary(self):
-        print("\n=== TỔNG KẾT KẾT QUẢ KIỂM THỬ ===")
-        print(f"1. Đăng ký: Thành công {self.test_results['registration']['success']}, Thất bại {self.test_results['registration']['fail']}")
-        print(f"2. Đăng nhập: Thành công {self.test_results['login']['success']}, Thất bại {self.test_results['login']['fail']}")
-        print(f"3. Tạo lô hàng: Thành công {self.test_results['consignment']['success']}, Thất bại {self.test_results['consignment']['fail']}")
-        print(f"4. Thêm đơn hàng: Thành công {self.test_results['order']['success']}, Thất bại {self.test_results['order']['fail']}")
-        print(f"5. Tìm kiếm đơn hàng: Thành công {self.test_results['search']['success']}, Thất bại {self.test_results['search']['fail']}")
+        print("\n=== TEST RESULTS SUMMARY ===")
+        print(f"1. Registration: Success {self.test_results['registration']['success']}, Fail {self.test_results['registration']['fail']}")
+        print(f"2. Login: Success {self.test_results['login']['success']}, Fail {self.test_results['login']['fail']}")
+        print(f"3. Create consignment: Success {self.test_results['consignment']['success']}, Fail {self.test_results['consignment']['fail']}")
+        print(f"4. Add order: Success {self.test_results['order']['success']}, Fail {self.test_results['order']['fail']}")
+        print(f"5. Search order: Success {self.test_results['search']['success']}, Fail {self.test_results['search']['fail']}")
         
         total_success = (self.test_results['registration']['success'] + 
                         self.test_results['login']['success'] + 
@@ -308,15 +308,15 @@ class ConsignmentTest:
                       self.test_results['order']['fail'] + 
                       self.test_results['search']['fail'])
         
-        print(f"\nTỔNG CỘNG: {total_success} test case thành công, {total_fail} test case thất bại")
+        print(f"\nTOTAL: {total_success} test cases passed, {total_fail} test cases failed")
 
     def cleanup(self):
         if self.driver:
             try:
                 self.driver.quit()
-                print("[SYSTEM] Đã đóng WebDriver")
+                print("[SYSTEM] WebDriver closed")
             except Exception as e:
-                print(f"[SYSTEM ERROR] Lỗi khi đóng WebDriver: {str(e)}")
+                print(f"[SYSTEM ERROR] Error closing WebDriver: {str(e)}")
         
         if self.cursor:
             try:
@@ -335,6 +335,6 @@ if __name__ == "__main__":
     try:
         tester.run_test_cases()
     except Exception as e:
-        print(f"[SYSTEM ERROR] Lỗi nghiêm trọng khi chạy test: {str(e)}")
+        print(f"[SYSTEM ERROR] Critical error running tests: {str(e)}")
     finally:
         tester.cleanup()

@@ -14,29 +14,29 @@ class LoginHandler:
         password = login_info["password"]
         description = login_info["description"]
         
-        print(f"\nĐang đăng nhập với email: {email} ({description})")
+        print(f"\nLogging in with email: {email} ({description})")
         try:
             self.driver.get("http://localhost:3000/login")
             sleep(2)
 
-            # Nhập email
+            # Enter email
             try:
                 email_input = self.wait.until(EC.presence_of_element_located((By.ID, "email")))
                 email_input.clear()
                 email_input.send_keys(email)
                 sleep(1)
             except TimeoutException:
-                print("-> [VALIDATE] Không tìm thấy trường email")
+                print("-> [VALIDATE] Email field not found")
                 return False
             
-            # Nhập password
+            # Enter password
             try:
                 password_input = self.wait.until(EC.presence_of_element_located((By.ID, "password")))
                 password_input.clear()
                 password_input.send_keys(password)
                 sleep(1)
             except TimeoutException:
-                print("-> [VALIDATE] Không tìm thấy trường password")
+                print("-> [VALIDATE] Password field not found")
                 return False
             
             # Click login button
@@ -45,28 +45,28 @@ class LoginHandler:
                 login_button.click()
                 sleep(3)
             except TimeoutException:
-                print("-> [VALIDATE] Không tìm thấy nút đăng nhập")
+                print("-> [VALIDATE] Login button not found")
                 return False
             
             
-           # Kiểm tra đăng nhập thành công
+           # Check login success
             current_url = self.driver.current_url
             if "home" in current_url or "admin" in current_url:
-                print("-> [SUCCESS] Đăng nhập thành công")
+                print("-> [SUCCESS] Login successful")
                 sleep(2)
                 return True
             else:
-                print("-> [VALIDATE] Đăng nhập không thành công (không chuyển về trang home/admin)")
+                print("-> [VALIDATE] Login failed (not redirected to home/admin page)")
                 return False
 
             
         except Exception as e:
-            print(f"-> [SYSTEM ERROR] Lỗi hệ thống khi đăng nhập: {str(e)}")
+            print(f"-> [SYSTEM ERROR] System error during login: {str(e)}")
             return False
 
     def logout(self):
         try:
-            print("\n=== Đang thực hiện logout ===")
+            print("\n=== Performing logout ===")
             self.driver.get("http://localhost:3000/home") 
             sleep(2)
             
@@ -75,12 +75,12 @@ class LoginHandler:
                     (By.XPATH, "//button[contains(., 'Logout')]")))
                 logout_button.click()
                 sleep(2)
-                print("-> [SUCCESS] Đã logout thành công")
+                print("-> [SUCCESS] Logout successful")
                 return True
             except TimeoutException:
-                print("-> [VALIDATE] Không tìm thấy nút logout")
+                print("-> [VALIDATE] Logout button not found")
                 return False
                 
         except Exception as e:
-            print(f"-> [SYSTEM ERROR] Lỗi hệ thống khi logout: {str(e)}")
+            print(f"-> [SYSTEM ERROR] System error during logout: {str(e)}")
             return False

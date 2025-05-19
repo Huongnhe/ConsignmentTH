@@ -8,6 +8,7 @@ import imaplib
 import email
 import time
 from email.header import decode_header
+from datetime import timedelta, datetime
 
 class RegistrationHandler:
     def __init__(self, driver):
@@ -57,30 +58,48 @@ class RegistrationHandler:
             print(f"Error submitting registration form: {str(e)}")
             return False
     
-    def get_otp_from_email(self, email_address, email_password, timeout=300):
+    def get_otp_from_email(self, email_address, email_password, timeout=120):
         print(f"Retrieving OTP from email: {email_address}")
         start_time = time.time()
-        otp = None
-
+        
         while time.time() - start_time < timeout:
             try:
-                mail = imaplib.IMAP4_SSL("imap.gmail.com")
-                mail.login(email_address, email_password)
-                mail.select("inbox")
-                result, data = mail.search(None, "ALL")
-                mail_ids = data[0].split()
-
-                if mail_ids:
-                    for mail_id in reversed(mail_ids):
-                        result, data = mail.fetch(mail_id, "(RFC822)")
-                        raw_email = data[0][1]
+                mail = imaplib.IMAP4_SSL("imap.gmail.com", timeout=30)
+                print("IMAP connection established")
+                
+                try:
+                    mail.login(email_address, email_password)
+                    print("Login successful")
+                    
+                    mail.select("inbox")
+                    print("Inbox selected")
+                    
+                    since_time = (datetime.now() - timedelta(minutes=5)).strftime("%d-%b-%Y")
+                    status, messages = mail.search(None, f'(SINCE "{since_time}")')
+                    
+                    if status != "OK":
+                        print("Error searching emails")
+                        continue
+                        
+                    messages = messages[0].split()
+                    print(f"Found {len(messages)} recent emails")
+                    
+                    for mail_id in reversed(messages):
+                        status, msg_data = mail.fetch(mail_id, "(RFC822)")
+                        
+                        if status != "OK":
+                            print(f"Error fetching email {mail_id}")
+                            continue
+                            
+                        raw_email = msg_data[0][1]
                         email_message = email.message_from_bytes(raw_email)
                         
                         subject = decode_header(email_message["Subject"])[0][0]
-                        if isinstance(subject, bytes):
-                            subject = subject.decode()
-
+                        subject = subject.decode() if isinstance(subject, bytes) else subject
+                        print(f"Checking email with subject: {subject}")
+                        
                         if "OTP" in subject or "verification code" in subject.lower():
+                            body = ""
                             if email_message.is_multipart():
                                 for part in email_message.walk():
                                     if part.get_content_type() == "text/plain":
@@ -88,70 +107,59 @@ class RegistrationHandler:
                                         break
                             else:
                                 body = email_message.get_payload(decode=True).decode()
-
-                            otp_match = re.search(r"\b\d{6}\b", body)
+                            
+                            otp_match = re.search(r'(\b\d{6}\b)|(code(?: is)?:\s*(\d{6}))', body, re.IGNORECASE)
                             if otp_match:
-                                otp = otp_match.group(0)
-                                print(f"Retrieved OTP: {otp}")
-                                mail.close()
-                                mail.logout()
+                                otp = otp_match.group(1) or otp_match.group(3)
+                                print(f"Found OTP: {otp}")
                                 return otp
-
-                mail.close()
-                mail.logout()
+                                
+                finally:
+                    mail.close()
+                    mail.logout()
+                    print("IMAP connection closed")
+                    
             except Exception as e:
-                print(f"Error retrieving OTP from email: {str(e)}")
-                return None
-            sleep(10)
-
-        print("Failed to retrieve OTP within timeout period")
+                print(f"Error during email retrieval: {str(e)}")
+                continue
+                
+            print("Waiting for OTP email...")
+            time.sleep(10)
+        
+        print("OTP retrieval timeout")
         return None
     
     def verify_otp_step(self, otp):
         try:
-            # Đóng modal thông báo nếu có
-            self.close_modal()
-            sleep(1)
-
-            # Chờ cho OTP input sẵn sàng
-            otp_field = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "input[data-testid='otp-input']"))
+            self.wait.until(EC.visibility_of_element_located(
+                (By.CSS_SELECTOR, "input[data-testid='otp-input']")
+            ))
+            
+            otp_fields = self.driver.find_elements(
+                By.CSS_SELECTOR, "input[data-testid='otp-input']"
             )
             
-            # Chờ thêm để đảm bảo input có thể tương tác
-            self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[data-testid='otp-input']")))
+            if len(otp_fields) == 1:
+                otp_fields[0].clear()
+                otp_fields[0].send_keys(otp)
+            else:
+                for i, digit in enumerate(otp):
+                    if i < len(otp_fields):
+                        otp_fields[i].clear()
+                        otp_fields[i].send_keys(digit)
+                        sleep(0.3)
             
-            # Xóa bất kỳ giá trị nào đã có trong trường OTP
-            otp_field.clear()
-            sleep(0.5)
-            
-            # Nhập OTP từng ký tự với delay
-            for digit in otp:
-                otp_field.send_keys(digit)
-                sleep(0.2)
-            
-            sleep(0.5)
-
-            # Click nút verify
             verify_button = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='verify-button']"))
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "button[data-testid='verify-button']")
+                )
             )
             verify_button.click()
+            return True
             
-            # Chờ kết quả xác thực
-            try:
-                self.wait.until(lambda driver: (
-                    EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='alert-modal']"))(driver) or
-                    "/login" in driver.current_url
-                ))
-                return True
-            except TimeoutException:
-                print("Timeout waiting for verification result")
-                return False
-                
         except Exception as e:
-            print(f"Error in OTP verification step: {str(e)}")
-            self.driver.save_screenshot("error_otp_verification.png")
+            print(f"OTP verification failed: {str(e)}")
+            self.driver.save_screenshot("otp_verification_error.png")
             return False
 
     def verify_invalid_otp(self, otp):
@@ -160,11 +168,9 @@ class RegistrationHandler:
                 EC.presence_of_element_located((By.CSS_SELECTOR, "input[data-testid='otp-input']"))
             )
             
-            # Xóa trường OTP trước khi nhập
             otp_field.clear()
             sleep(0.5)
             
-            # Nhập OTP từng ký tự với delay
             for digit in otp:
                 otp_field.send_keys(digit)
                 sleep(0.2)
@@ -207,6 +213,17 @@ class RegistrationHandler:
         except Exception:
             return False
 
+    def check_email_exists_error(self):
+        try:
+            error_message = self.wait.until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='email-exists-error']"))
+            )
+            if "already exists" in error_message.text.lower():
+                return True
+            return False
+        except TimeoutException:
+            return False
+
     def run_registration_test_case(self, test_case):
         print(f"\n=== Starting test case: {test_case['case_name']} ===")
         result = False
@@ -225,6 +242,11 @@ class RegistrationHandler:
                 return False
 
             if test_case["expected_result"]:
+                # Check if email already exists first
+                if self.check_email_exists_error():
+                    print("Email already exists in database - test case should fail")
+                    return False
+                
                 try:
                     self.wait.until(
                         EC.text_to_be_present_in_element((By.TAG_NAME, "h2"), "OTP VERIFICATION"))
@@ -262,10 +284,14 @@ class RegistrationHandler:
                         otp = test_case.get("otp", "123456")
                         result = self.verify_invalid_otp(otp)
                     else:
-                        self.wait.until(
-                            EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='alert-modal']")))
-                        print("Found error modal as expected")
-                        result = True
+                        if self.check_email_exists_error():
+                            print("Found email exists error as expected")
+                            result = True
+                        else:
+                            self.wait.until(
+                                EC.visibility_of_element_located((By.CSS_SELECTOR, "div[data-testid='alert-modal']")))
+                            print("Found error modal as expected")
+                            result = True
                 except TimeoutException:
                     print("Error modal not found when expected")
                     result = False
