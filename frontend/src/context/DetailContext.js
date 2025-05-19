@@ -1,23 +1,18 @@
 import React, { createContext, useContext, useState } from "react";
-import { fetchConsignmentDetailAPI, deleteConsignmentAPI,updateConsignmentAPI } from "../api/api";
-// import { fetchConsignmentDetailAPI } from "../api/api";
+import { fetchConsignmentDetailAPI, deleteConsignmentAPI, updateConsignmentAPI } from "../api/api";
 
-// Tạo context
 const AuthDetailContext = createContext();
 
-// Provider
 export const AuthDetailProvider = ({ children }) => {
     const [consignmentDetail, setConsignmentDetail] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Hàm lấy chi tiết đơn ký gửi
     const fetchConsignmentDetail = async (consignmentId) => {
         const token = localStorage.getItem("token");
-        // alert(token)
 
         if (!token) {
-            setError("Token không tồn tại.");
+            setError("Token does not exist.");
             return;
         }
 
@@ -25,19 +20,18 @@ export const AuthDetailProvider = ({ children }) => {
         setError(null);
         try {
             const data = await fetchConsignmentDetailAPI(token, consignmentId);
-            console.log("Dữ liệu nhận được từ API:", JSON.stringify(data, null, 2));
+            console.log("Data received from API:", JSON.stringify(data, null, 2));
 
-            // Đảm bảo dữ liệu có cấu trúc đúng
             const formattedData = {
                 ...data,
-                Products: data.Products || [] // Đảm bảo luôn có mảng Products
+                Products: data.Products || []
             };
 
             setConsignmentDetail(formattedData);
-            console.log("Chi tiết đơn ký gửi:", formattedData);
+            console.log("Consignment details:", formattedData);
         } catch (err) {
-            setError(err.message || "Không thể lấy chi tiết đơn ký gửi.");
-            console.error("Lỗi chi tiết:", {
+            setError(err.message || "Failed to get consignment details.");
+            console.error("Error details:", {
                 message: err.message,
                 stack: err.stack
             });
@@ -50,7 +44,7 @@ export const AuthDetailProvider = ({ children }) => {
         const token = localStorage.getItem("token");
 
         if (!token) {
-            setError("Token không tồn tại.");
+            setError("Token does not exist.");
             return;
         }
 
@@ -58,30 +52,29 @@ export const AuthDetailProvider = ({ children }) => {
             const result = await deleteConsignmentAPI(token, consignmentId);
 
             if (result.success) {
-                alert("Đơn ký gửi đã được xóa thành công!");
-                return result; // Trả về kết quả khi xóa thành công
+                alert("Consignment deleted successfully!");
+                return result;
             } else {
-                setError(result.message || "Xóa đơn ký gửi không thành công.");
+                setError(result.message || "Failed to delete consignment.");
             }
         } catch (err) {
-            setError(err.message || "Lỗi khi xóa đơn ký gửi.");
-            console.error("Lỗi xóa đơn ký gửi:", err);
+            setError(err.message || "Error deleting consignment.");
+            console.error("Consignment deletion error:", err);
         }
     };
 
-    // Hàm cập nhật sản phẩm trong đơn ký gửi
     const updateConsignment = async (consignmentId, productId, updatedData) => {
         console.log("[DEBUG] Update params:", { consignmentId, productId, updatedData });
         
         const token = localStorage.getItem("token");
         if (!token) {
-            const errorMsg = "Vui lòng đăng nhập lại";
+            const errorMsg = "Please login again";
             setError(errorMsg);
             throw new Error(errorMsg);
         }
 
         if (!productId) {
-            const errorMsg = "Thiếu ID sản phẩm";
+            const errorMsg = "Missing product ID";
             setError(errorMsg);
             throw new Error(errorMsg);
         }
@@ -97,9 +90,8 @@ export const AuthDetailProvider = ({ children }) => {
                 updatedData
             );
     
-            console.log("API Response:", result); // Thêm dòng này
+            console.log("API Response:", result);
             
-            // Cập nhật state một cách an toàn
             setConsignmentDetail(prev => {
                 if (!prev || !prev.Products) return prev;
                 
@@ -127,10 +119,9 @@ export const AuthDetailProvider = ({ children }) => {
                 }
             });
 
-            let errorMsg = "Cập nhật thất bại";
+            let errorMsg = "Update failed";
             
             if (error.response?.data?.errors) {
-                // Xử lý lỗi validation từ server
                 errorMsg = Object.entries(error.response.data.errors)
                     .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
                     .join('\n');
@@ -145,16 +136,16 @@ export const AuthDetailProvider = ({ children }) => {
             setLoading(false);
         }
     };
+
     return (
         <AuthDetailContext.Provider
-            value={{ consignmentDetail, fetchConsignmentDetail,deleteConsignment,updateConsignment, loading, error }}
+            value={{ consignmentDetail, fetchConsignmentDetail, deleteConsignment, updateConsignment, loading, error }}
         >
             {children}
         </AuthDetailContext.Provider>
     );
 };
 
-// Hook để sử dụng context
 export const useAuthDetail = () => {
     return useContext(AuthDetailContext);
 };

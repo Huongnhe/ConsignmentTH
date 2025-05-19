@@ -26,11 +26,11 @@ export const ProductSearchProvider = ({ children }) => {
     const searchProducts = async (searchKeyword) => {
         const token = localStorage.getItem("token");
         if (!searchKeyword?.trim()) {
-            setError("Vui lòng nhập từ khóa tìm kiếm");
+            setError("Please enter a search keyword");
             return { success: false, message: "Search keyword is required" };
         }
         if (!token) {
-            setError("Vui lòng đăng nhập để tìm kiếm");
+            setError("Please login to search");
             return { success: false, message: "Authentication required" };
         }
 
@@ -44,7 +44,7 @@ export const ProductSearchProvider = ({ children }) => {
             setLastSearch(new Date());
             return { success: true, data: results };
         } catch (error) {
-            const errorMessage = error.response?.data?.message || "Tìm kiếm thất bại";
+            const errorMessage = error.response?.data?.message || "Search failed";
             setError(errorMessage);
             setSearchResults([]);
             return { success: false, message: errorMessage };
@@ -62,7 +62,7 @@ export const ProductSearchProvider = ({ children }) => {
             setInvoice(data);
             return { success: true, data };
         } catch (err) {
-            const errorMsg = err.response?.data?.message || "Lỗi khi tải hóa đơn";
+            const errorMsg = err.response?.data?.message || "Error loading invoice";
             setError(errorMsg);
             setInvoice(null);
             return { success: false, message: errorMsg };
@@ -94,7 +94,7 @@ export const ProductSearchProvider = ({ children }) => {
 export const useProductSearch = () => {
     const context = useContext(ProductSearchContext);
     if (!context) {
-        throw new Error('useProductSearch phải được sử dụng bên trong ProductSearchProvider');
+        throw new Error('useProductSearch must be used within ProductSearchProvider');
     }
     return context;
 };

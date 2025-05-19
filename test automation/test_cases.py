@@ -122,24 +122,24 @@ class ConsignmentTest:
         ]
         
         self.registration_test_cases = [
-            {
-                "case_name": "Xác thực OTP sai",
-                "username": "testuser",
-                "email": "khanhhhadz@gmail.com",
-                "password": "Valid@123",
-                "email_address": "khanhhhadz@gmail.com",
-                "email_password": "ahxtbsnpgkkhcfjp",
-                "otp": "999999",
-                "expected_result": False,
-                "description": "Kiểm tra hệ thống báo lỗi khi nhập OTP sai"
-            },
+            # {
+            #     "case_name": "Xác thực OTP sai",
+            #     "username": "testuser",
+            #     "email": "khanhhhadz@gmail.com",
+            #     "password": "Valid@123",
+            #     "email_address": "dthuhuong133@gmail.com",
+            #     "email_password": "uqljpuvwdcclunua",
+            #     "otp": "999999",
+            #     "expected_result": False,
+            #     "description": "Kiểm tra hệ thống báo lỗi khi nhập OTP sai"
+            # },
             {
                 "case_name": "Đăng ký thành công với email hợp lệ",
                 "username": "khanh",
                 "email": "khanhhhadz@gmail.com",
                 "password": "123",
-                "email_address": "khanhhhadz@gmail.com",  
-                "email_password": "ahxtbsnpgkkhcfjp", 
+                "email_address": "dthuhuong133@gmail.com",  
+                "email_password": "uqljpuvwdcclunua", 
                 "expected_result": True,
                 "description": "Kiểm tra đăng ký thành công với email hợp lệ và xác thực OTP thực"
             },

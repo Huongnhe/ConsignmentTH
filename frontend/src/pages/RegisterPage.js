@@ -41,6 +41,13 @@ const RegisterPage = () => {
             variant
         });
         setShowModal(true);
+        
+        // Tự động đóng modal sau 3 giây nếu là thông báo thành công
+        if (variant === "success") {
+            setTimeout(() => {
+                setShowModal(false);
+            }, 3000);
+        }
     };
 
     const closeModal = () => {
@@ -220,7 +227,6 @@ const RegisterPage = () => {
                     backdropFilter: "blur(5px)"
                 }}></div>
 
-            {/* Modal Alert */}
             <div className={`modal ${showModal ? 'show d-block' : ''}`} 
                  tabIndex="-1" 
                  role="dialog" 

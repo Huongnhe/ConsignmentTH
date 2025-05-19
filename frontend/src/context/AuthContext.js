@@ -14,21 +14,21 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
-        console.log("User từ localStorage:", storedUser);
+        console.log("User from localStorage:", storedUser);
         if (storedUser) {
             try {
                 setUser(JSON.parse(storedUser));
             } catch (error) {
-                console.error("Lỗi khi phân tích dữ liệu user từ localStorage:", error);
+                console.error("Error parsing user data from localStorage:", error);
             }
         }
-        setLoading(false); // Sau khi check xong thì set false
+        setLoading(false); // Set false after checking
     }, []);
 
     const login = async (email, password) => {
         try {
             const data = await loginUser(email, password);
-            console.log("Phản hồi từ API:", data);
+            console.log("API response:", data);
             
             if (data.token && data.user) {
                 localStorage.setItem("token", data.token);
@@ -36,11 +36,11 @@ export const AuthProvider = ({ children }) => {
                 setUser(data.user);
                 return data.user;
             } else {
-                throw new Error("Đăng nhập thất bại: Dữ liệu không hợp lệ từ server");
+                throw new Error("Login failed: Invalid data from server");
             }
         } catch (error) {
-            console.error("Lỗi khi đăng nhập:", error);
-            throw error; // Ném lỗi để component có thể bắt và xử lý
+            console.error("Login error:", error);
+            throw error; // Throw error for component to catch and handle
         }
     };
 
@@ -64,14 +64,14 @@ export const AuthProvider = ({ children }) => {
         try {
             const data = await registerWithOTPStep2API(username, email, password, otp);
             
-            console.log("Data received:", data); // Debug log
+            console.log("Data received:", data); 
 
             if (!data.success) {
-                throw new Error(data.message || "Xác thực OTP thất bại");
+                throw new Error(data.message || "OTP verification failed");
             }
 
             if (!data.token || !data.user) {
-                throw new Error("Dữ liệu người dùng không hợp lệ từ server");
+                throw new Error("Invalid user data from server");
             }
 
             localStorage.setItem("token", data.token);

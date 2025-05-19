@@ -16,13 +16,13 @@ export const AdminConsignmentProvider = ({ children }) => {
     console.error("AdminConsignment Error:", error);
     return error.response?.data?.message 
       || error.message 
-      || "Lỗi không xác định";
+      || "Unknown error";
   }, []);
 
   const normalizeData = useCallback((data) => {
     try {
       if (!Array.isArray(data)) {
-        console.warn("Dữ liệu không phải mảng:", data);
+        console.warn("Data is not an array:", data);
         return [];
       }
 
@@ -35,7 +35,7 @@ export const AdminConsignmentProvider = ({ children }) => {
 
           const ticket = ticketsMap.get(ticketId) || {
             TicketID: ticketId,
-            User_name: item.User_name || item.username || 'Không xác định',
+            User_name: item.User_name || item.username || 'Unknown',
             Email: item.Email || item.email || '',
             Status: item.Status || item.status || 'Pending',
             Create_date: item.Create_date || '--/--/----',
@@ -57,13 +57,13 @@ export const AdminConsignmentProvider = ({ children }) => {
 
           ticketsMap.set(ticketId, ticket);
         } catch (itemError) {
-          console.error("Lỗi xử lý item:", itemError, "Item:", item);
+          console.error("Error processing item:", itemError, "Item:", item);
         }
       });
 
       return Array.from(ticketsMap.values());
     } catch (error) {
-      console.error("Lỗi chuẩn hóa dữ liệu:", error);
+      console.error("Data normalization error:", error);
       return [];
     }
   }, []);
@@ -71,7 +71,7 @@ export const AdminConsignmentProvider = ({ children }) => {
   const fetchPendingConsignments = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+      setState(prev => ({ ...prev, error: "Please login again", initialized: true }));
       return;
     }
 
@@ -103,7 +103,7 @@ export const AdminConsignmentProvider = ({ children }) => {
   const fetchReviewedConsignments = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+      setState(prev => ({ ...prev, error: "Please login again", initialized: true }));
       return;
     }
 
@@ -147,7 +147,7 @@ export const AdminConsignmentProvider = ({ children }) => {
   const approveConsignmentTicket = useCallback(async (ticketId) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+    setState(prev => ({ ...prev, error: "Please login again", initialized: true }));
     return;
   }
 
@@ -158,10 +158,10 @@ export const AdminConsignmentProvider = ({ children }) => {
 
     if (response?.data?.success) {
       setState(prev => {
-        // Lọc bỏ ticket đã được duyệt khỏi danh sách pending
+        // Filter out the approved ticket from pending list
         const updatedPending = prev.pendingConsignments.filter(ticket => ticket.TicketID !== ticketId);
         
-        // Thêm ticket đã duyệt vào danh sách reviewed
+        // Add the approved ticket to reviewed list
         const approvedTicket = prev.pendingConsignments.find(ticket => ticket.TicketID === ticketId);
         if (approvedTicket) {
           approvedTicket.Status = 'Approved';
@@ -182,13 +182,13 @@ export const AdminConsignmentProvider = ({ children }) => {
         };
       });
       
-      // Tự động refresh danh sách sau 1 giây
+      // Auto refresh after 1 second
       setTimeout(() => {
         fetchPendingConsignments();
         fetchReviewedConsignments();
       }, 1000);
     } else {
-      throw new Error(response?.data?.message || 'Lỗi khi duyệt đơn');
+      throw new Error(response?.data?.message || 'Approval error');
     }
   } catch (error) {
     setState(prev => ({
@@ -202,7 +202,7 @@ export const AdminConsignmentProvider = ({ children }) => {
 const rejectConsignmentTicket = useCallback(async (ticketId) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    setState(prev => ({ ...prev, error: "Vui lòng đăng nhập lại", initialized: true }));
+    setState(prev => ({ ...prev, error: "Please login again", initialized: true }));
     return;
   }
 
@@ -213,10 +213,10 @@ const rejectConsignmentTicket = useCallback(async (ticketId) => {
 
     if (response?.data?.success) {
       setState(prev => {
-        // Lọc bỏ ticket đã từ chối khỏi danh sách pending
+        // Filter out the rejected ticket from pending list
         const updatedPending = prev.pendingConsignments.filter(ticket => ticket.TicketID !== ticketId);
         
-        // Thêm ticket đã từ chối vào danh sách reviewed
+        // Add the rejected ticket to reviewed list
         const rejectedTicket = prev.pendingConsignments.find(ticket => ticket.TicketID === ticketId);
         if (rejectedTicket) {
           rejectedTicket.Status = 'Rejected';
@@ -237,13 +237,13 @@ const rejectConsignmentTicket = useCallback(async (ticketId) => {
         };
       });
       
-      // Tự động refresh danh sách sau 1 giây
+      // Auto refresh after 1 second
       setTimeout(() => {
         fetchPendingConsignments();
         fetchReviewedConsignments();
       }, 1000);
     } else {
-      throw new Error(response?.data?.message || 'Lỗi khi từ chối đơn');
+      throw new Error(response?.data?.message || 'Rejection error');
     }
   } catch (error) {
     setState(prev => ({
@@ -273,7 +273,7 @@ const rejectConsignmentTicket = useCallback(async (ticketId) => {
 export const useAdminConsignment = () => {
   const context = useContext(AdminConsignmentContext);
   if (!context) {
-    throw new Error("useAdminConsignment phải được dùng trong AdminConsignmentProvider");
+    throw new Error("useAdminConsignment must be used within AdminConsignmentProvider");
   }
   return context;
 };
