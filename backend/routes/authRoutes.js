@@ -24,18 +24,15 @@ const {
 
 const router = express.Router({ limit: '50mb' });
 
-// ============ AUTHENTICATION ROUTES ============
-// Regular registration (without OTP)
 router.post("/register", register);
 
-// Registration with OTP (2 steps)
 router.post("/register/otp", registerWithOTPStep1); // Step 1: Send OTP
 router.post("/register/otp/verify", registerWithOTPStep2); // Step 2: Verify OTP
 
 // Login
 router.post("/login", login);
 
-// ============ USER ROUTES ============
+// USER ROUTES
 router.post("/consigns", authenticateUser, fetchUserProducts);
 router.post("/CreateConsign", authenticateUser, createConsignController);
 router.post("/detailConsign/:id", authenticateUser, fetchConsignmentDetail);
@@ -43,7 +40,7 @@ router.put("/consignmentUpdate/:consignmentId/products/:productId", authenticate
 router.post("/consignments/:consignmentId/products/:productId", authenticateUser, deleteProductInConsignment);
 router.post("/consignments/:consignmentId", authenticateUser, deleteConsignmentID);
 
-// ============ ADMIN ROUTES ============
+//ADMIN ROUTES
 router.post("/admin/consignments", authenticateUser, fetchAllConsignmentTickets);
 router.post("/admin/consignments/pending", authenticateUser, fetchPendingConsignmentTickets);
 router.post("/admin/consignments/reviewed", authenticateUser, fetchReviewedConsignmentTickets);

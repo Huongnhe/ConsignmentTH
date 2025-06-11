@@ -1,0 +1,179 @@
+DROP DATABASE ConsignmentTH;
+CREATE DATABASE ConsignmentTH;
+USE ConsignmentTH;
+    
+    -- Tạo bảng TH_User
+	CREATE TABLE TH_User (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		User_name VARCHAR(100) NOT NULL,
+		Email VARCHAR(100) NOT NULL UNIQUE,
+		Password_User VARCHAR(255) NOT NULL,
+		Account ENUM('Manager', 'Customer') NOT NULL
+	);
+    
+	CREATE TABLE TH_Email_Verification (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		Email VARCHAR(100) NOT NULL,
+		OTP VARCHAR(10) NOT NULL,
+		Expires_At DATETIME NOT NULL,
+		Is_Verified BOOLEAN DEFAULT FALSE,
+		Created_At DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+    
+	-- Tạo bảng TH_Brand
+	CREATE TABLE TH_Brand (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		Brand_name VARCHAR(100) NOT NULL
+	);
+
+	-- Tạo bảng TH_Product_Type
+	CREATE TABLE TH_Product_Type (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		Product_type_name VARCHAR(100) NOT NULL
+	);
+
+	-- Tạo bảng TH_Product
+	CREATE TABLE TH_Product (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		Product_name VARCHAR(100) NOT NULL,
+		Sale_price DECIMAL(18,2) NOT NULL,
+		Original_price DECIMAL(18,2) NOT NULL,
+		Status ENUM('Consigned', 'Received', 'Sold') NOT NULL,
+		Brand_id INT,
+		Product_type_id INT,
+        Image VARCHAR(255) DEFAULT '../Images/default.png',
+		FOREIGN KEY (Brand_id) REFERENCES TH_Brand(ID),
+		FOREIGN KEY (Product_type_id) REFERENCES TH_Product_Type(ID)
+	);
+
+	-- Tạo bảng TH_Consignment_Ticket
+	CREATE TABLE TH_Consignment_Ticket (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		User_id INT,
+		Status ENUM('Pending', 'Approved', 'Rejected') NOT NULL,
+		Create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (User_id) REFERENCES TH_User(ID)
+	);
+
+	CREATE TABLE TH_Consignment_Ticket_Product_Detail (
+		Ticket_id INT,
+		Product_id INT,
+		Quantity INT DEFAULT 1, 
+		Price DECIMAL(18,2),    
+		PRIMARY KEY (Ticket_id, Product_id), 
+		FOREIGN KEY (Ticket_id) REFERENCES TH_Consignment_Ticket(ID),
+		FOREIGN KEY (Product_id) REFERENCES TH_Product(ID)
+	);
+
+    
+DELIMITER $$
+CREATE TRIGGER update_price_before_insert
+BEFORE INSERT ON TH_Consignment_Ticket_Product_Detail
+FOR EACH ROW
+BEGIN
+    DECLARE product_price DECIMAL(18,2);
+    
+    SELECT Sale_price INTO product_price
+    FROM TH_Product
+    WHERE ID = NEW.Product_id;
+    
+    -- Thêm 0.5% vào giá
+    SET NEW.Price = product_price + (product_price * 1.5);
+END$$
+DELIMITER ;
+
+	-- Tạo bảng TH_Order
+	CREATE TABLE TH_Order (
+		ID INT AUTO_INCREMENT PRIMARY KEY,
+		Create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+		Total_value DECIMAL(18,2) NOT NULL,
+		Quantity INT NOT NULL,
+		Order_status ENUM('Processing', 'Shipping', 'Completed') NOT NULL
+	);
+
+	-- Tạo bảng TH_Order_Detail
+		CREATE TABLE TH_Order_Detail (
+			ID INT AUTO_INCREMENT PRIMARY KEY,
+			Order_id INT,
+			Product_id INT UNIQUE,
+			Unit_price DECIMAL(18,2) NOT NULL,
+			FOREIGN KEY (Order_id) REFERENCES TH_Order(ID),
+			FOREIGN KEY (Product_id) REFERENCES TH_Product(ID)
+		);
+		CREATE TABLE TH_Customer_Info (
+			ID INT AUTO_INCREMENT PRIMARY KEY,
+			Order_id INT UNIQUE,
+			Full_name VARCHAR(100),
+			Address VARCHAR(255),
+			Phone VARCHAR(20),
+			Age INT,
+			FOREIGN KEY (Order_id) REFERENCES TH_Order(ID)
+		);
+	-- Thêm dữ liệu vào bảng TH_User
+	INSERT INTO TH_User (User_name, Email, Password_User, Account) VALUES
+	('cus', 'cus@gmail.com', '12345', 'Customer'),
+	('Bob Smith', 'bob@gmail.com', 'securepass', 'Customer'),
+	('Charlie Brown', 'charlie@gmail.com', 'charliepass', 'Customer'),
+	('David White', 'david@gmail.com', 'davidpass', 'Customer'),
+	('admin', 'admin@gmail.com', '123', 'Manager'),
+	('Emma Black', 'emma@gmail.com', 'emmapass', 'Customer');
+
+
+	-- Thêm dữ liệu vào bảng TH_Brand
+	INSERT INTO TH_Brand (Brand_name) VALUES
+	('Nike'), ('Adidas'), ('Puma'), ('Reebok'), ('Under Armour');
+
+	-- Thêm dữ liệu vào bảng TH_Product_Type
+	INSERT INTO TH_Product_Type (Product_type_name) VALUES
+	('Shoes'), ('Clothing'), ('Accessories'), ('Bags'), ('Sports Equipment');
+
+	-- Thêm dữ liệu vào bảng TH_Product
+	INSERT INTO TH_Product (Product_name, Sale_price, Original_price, Status, Brand_id, Product_type_id) VALUES
+	('Converse Classic', 120.00, 100.00, 'Consigned', 1, 1),
+	('New Balance 574', 140.00, 110.00, 'Received', 2, 1),
+	('Fila Disruptor', 90.00, 70.00, 'Sold', 3, 2),
+	('Vans Old Skool', 80.00, 60.00, 'Consigned', 4, 4),
+	('ASICS Gel', 160.00, 130.00, 'Received', 5, 3),
+	('Nike Air Max', 150.00, 120.00, 'Consigned', 1, 1),
+	('Adidas Ultraboost', 180.00, 140.00, 'Received', 2, 1),
+	('Puma Running Shorts', 50.00, 35.00, 'Sold', 3, 2),
+	('Reebok Backpack', 70.00, 50.00, 'Consigned', 4, 4),
+	('Under Armour Gloves', 30.00, 20.00, 'Received', 5, 3);
+
+	-- Thêm dữ liệu vào bảng TH_Consignment_Ticket
+	INSERT INTO TH_Consignment_Ticket (User_id, Status, Create_date) VALUES
+	(1, 'Pending', '2024-02-01'),
+	(1, 'Pending', '2024-02-01'),
+	(2, 'Approved', '2024-02-02'),
+	(2, 'Approved', '2024-02-02'),
+	(2, 'Approved', '2024-02-02'),
+	(3, 'Rejected', '2024-02-03'),
+	(3,  'Rejected', '2024-02-03'),
+	(4,  'Pending', '2024-02-04'),
+	(4,'Pending', '2024-02-04'),
+	(4, 'Pending', '2024-02-04'),
+	(1, 'Pending', '2024-02-04'),
+	(1, 'Pending', '2024-02-04'),
+	(1, 'Pending', '2024-02-04');
+
+	-- Thêm sản phẩm vào hóa đơn (giá sẽ tự động lấy từ bảng TH_Product)
+	INSERT INTO TH_Consignment_Ticket_Product_Detail (Ticket_id, Product_id, Quantity)
+	VALUES
+	(1, 1, 2), 
+	(1, 2, 1), 
+	(1, 3, 3); 
+
+	-- Thêm dữ liệu vào bảng TH_Order
+	INSERT INTO TH_Order ( Create_date, Total_value, Quantity, Order_status) VALUES
+	('2024-02-01', 150.00, 1, 'Processing'),
+	( '2024-02-03', 180.00, 2, 'Shipping'),
+	( '2024-02-05', 50.00, 3, 'Completed'),
+	( '2024-02-07', 70.00, 1, 'Processing'),
+	('2024-02-10', 30.00, 2, 'Completed');
+
+	-- Thêm dữ liệu vào bảng TH_Order_Detail
+	INSERT INTO TH_Order_Detail (Order_id, Product_id, Unit_price) VALUES
+	(1, 1, 150.00),
+	(3, 3, 50.00),
+	(4, 4, 70.00);
+
